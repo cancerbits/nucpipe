@@ -28,7 +28,11 @@ parser.add_argument('-P', '--pypiper', dest='pypiper_dir',
 # Just grab the single pypiper arg, and add it to the path here; leaving all other args for later parsing.
 args = parser.parse_known_args()[0]
 os.sys.path.insert(0, args.pypiper_dir)
+from pypiper import Pypiper
+from pypiper import ngstk
+parser = Pypiper.add_pypiper_args(parser)
 
+parser.add_argument('-c','--config', dest='config', type=str, required=True, help='Path to YAML configuration file')
 parser.add_argument('-i', '--unmapped-bam',
 					nargs="+", dest='unmapped_bam', help="Input unmapped bam file(s))")
 
@@ -53,11 +57,6 @@ parser.add_argument('-C', '--no-checks', dest='no_check', action='store_true',
 # Core-seq as optional parameter
 parser.add_argument('-cs', '--core-seq', default=False, dest='coreseq', action='store_true', help='CORE-seq Mode')
 
-# Pipeline recovery interface/options
-from pypiper import Pypiper
-from pypiper import ngstk
-
-parser = Pypiper.add_pypiper_args(parser)
 args = parser.parse_args()
 
 if not args.unmapped_bam:
@@ -93,23 +92,35 @@ pipelines_config_file = os.path.join(os.path.dirname(paths.scripts_dir), ".pipel
 config = yaml.load(open(pipelines_config_file, 'r'))
 
 # Resources
-paths.resources_dir = config["paths"]["resources"]
-paths.adapter_file = os.path.join(paths.resources_dir, "adapters", "epignome_adapters_2_add.fa")
-paths.ref_genome = os.path.join(paths.resources_dir, "genomes")
-paths.ref_genome_fasta = os.path.join(paths.resources_dir, "genomes", args.genome_assembly, args.genome_assembly + ".fa")
-paths.ref_ERCC_fasta = os.path.join(paths.resources_dir, "genomes", args.ERCC_assembly, args.ERCC_assembly + ".fa")
-paths.chrom_sizes = os.path.join(paths.resources_dir, "genomes", args.genome_assembly, args.genome_assembly + ".chromSizes")
-paths.bowtie_indexed_genome = os.path.join(paths.resources_dir, "genomes", args.genome_assembly, "indexed_bowtie1", args.genome_assembly)
-paths.bowtie_indexed_ERCC = os.path.join(paths.resources_dir, "genomes", args.ERCC_assembly, "indexed_bowtie1", args.ERCC_assembly)
+paths.resources_dir = config["resources"]["resources"]
+#paths.adapter_file = os.path.join(paths.resources_dir, "adapters", "epignome_adapters_2_add.fa")
+paths.adapter_file = config["resources"]["adapters"]
+#paths.ref_genome = os.path.join(paths.resources_dir, "genomes")
+paths.ref_genome = config["resources"]["genomes"]
+paths.ref_genome_fasta = os.path.join(paths.ref_genome, args.genome_assembly, args.genome_assembly + ".fa")
+paths.ref_ERCC_fasta = os.path.join(paths.ref_genome, args.ERCC_assembly, args.ERCC_assembly + ".fa")
+paths.chrom_sizes = os.path.join(paths.ref_genome, args.genome_assembly, args.genome_assembly + ".chromSizes")
+paths.bowtie_indexed_genome = os.path.join(paths.ref_genome, args.genome_assembly, "indexed_bowtie1", args.genome_assembly)
+paths.bowtie_indexed_ERCC = os.path.join(paths.ref_genome, args.ERCC_assembly, "indexed_bowtie1", args.ERCC_assembly)
 
 
 # Tools
-paths.trimmomatic_jar = "/cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar"
-paths.bowtie1 = "/cm/shared/apps/bowtie/1.1.1/bin/bowtie"
-paths.bowtie2 = "/cm/shared/apps/bowtie/2.2.3/bin"
-paths.picard_dir = os.path.join(paths.resources_dir, "tools/picard-tools-1.100")
-paths.bed2bigBed = os.path.join(paths.resources_dir, "tools", "bedToBigBed")
-paths.bed2bigWig = os.path.join(paths.resources_dir, "tools", "bedGraphToBigWig")
+paths.python = config["tools"]["python"]
+
+#paths.trimmomatic_jar = "/cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar"
+paths.trimmomatic_jar = config["tools"]["trimmomatic_epignome"]
+#paths.bowtie1 = "/cm/shared/apps/bowtie/1.1.1/bin/bowtie"
+paths.bowtie1 = config["tools"]["bowtie1"]
+#paths.bowtie2 = "/cm/shared/apps/bowtie/2.2.3/bin"
+paths.bowtie2 = config["tools"]["bowtie2"]
+#paths.picard_dir = os.path.join(paths.resources_dir, "tools/picard-tools-1.100")
+paths.picard_jar = config["tools"]["picard"]
+#paths.bed2bigBed = os.path.join(paths.resources_dir, "tools", "bedToBigBed")
+paths.bed2bigBed = config["tools"]["bed2bigBed"]
+#paths.bed2bigWig = os.path.join(paths.resources_dir, "tools", "bedGraphToBigWig")
+paths.bed2bigWig = config["tools"]["bed2bigWig"]
+
+
 
 # Output
 paths.pipeline_outfolder = os.path.join(args.project_root + args.sample_name + "/")
