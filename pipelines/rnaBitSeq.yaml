@@ -11,15 +11,12 @@ tools:
   Rscript: /cm/shared/apps/R/3.1.0/bin/Rscript
   picard: /cm/shared/apps/picard-tools/1.140/picard.jar
   trimmomatic_epignome: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar
-  bowtie1: /cm/shared/apps/bowtie/1.1.1/bin
-  bowtie2: /cm/shared/apps/bowtie/2.2.4/bin
+  bowtie1: /cm/shared/apps/bowtie/1.1.1/bin/bowtie
+  bowtie2: /cm/shared/apps/bowtie/2.2.4/bin/bowtie2
   bed2bigBed: /data/groups/lab_bock/shared/resources/tools/bedToBigBed
   bed2bigWig: /data/groups/lab_bock/shared/resources/tools/bedGraphToBigWig
-  bismark: /cm/shared/apps/bismark/0.12.2/bismark
-  deduplicate_bismark: /cm/shared/apps/bismark/0.12.2/deduplicate_bismark
-  bismark_methylation_extractor: /cm/shared/apps/bismark/0.12.2/bismark_methylation_extractor
   samtools: /cm/shared/apps/samtools/1.2/bin/samtools
-  biseqMethCalling_tools: /data/groups/lab_bock/shared/resources/tools
+
 
 parameters:
   # parameters passed to bioinformatic tools, subclassed by tool

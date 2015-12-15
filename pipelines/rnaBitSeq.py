@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 """
 RNA BitSeq pipeline
 documentation.
@@ -11,6 +11,7 @@ import sys
 from subprocess import call
 import subprocess
 import re
+import pypiper
 
 from datetime import datetime
 
@@ -21,45 +22,26 @@ from datetime import datetime
 # #######################################################################################
 parser = ArgumentParser(description='Pypiper arguments.')
 
-parser.add_argument('-P', '--pypiper', dest='pypiper_dir',
-					default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) + "/pypiper",
-					type=str)
-# Set up a pointer to the pypiper code you want to use:
-# Just grab the single pypiper arg, and add it to the path here; leaving all other args for later parsing.
-args = parser.parse_known_args()[0]
-os.sys.path.insert(0, args.pypiper_dir)
-from pypiper import Pypiper
-from pypiper import ngstk
-parser = Pypiper.add_pypiper_args(parser)
+parser = pypiper.add_pypiper_args(parser, all_args=True)
 
-parser.add_argument('-c','--config', dest='config', type=str, required=True, help='Path to YAML configuration file')
-parser.add_argument('-i', '--unmapped-bam',
-					nargs="+", dest='unmapped_bam', help="Input unmapped bam file(s))")
+# Add any pipeline-specific arguments
 
-parser.add_argument('-s', '--sample-name', default="default",
-					dest='sample_name', type=str, help='Sample Name')
-
-parser.add_argument('-r', '--project-root', default="/fhgfs/groups/lab_bock/shared/COREseq/results_pipeline/",
-					dest='project_root', type=str,
-					help='Directory in which the project will reside. Default=/fhgfs/groups/lab_bock/shared/COREseq/results_pipeline/')
-
-parser.add_argument('-g', '--genome', default="hg19_cdna",
-					dest='genome_assembly', type=str, help='Genome Assembly')
 parser.add_argument('-e', '--ercc', default="ERCC92",
-					dest='ERCC_assembly', type=str, help='ERCC Assembly')
+				dest='ERCC_assembly', type=str, help='ERCC Assembly')
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
-
-parser.add_argument('-p', '--paired-end', dest='paired_end', action='store_true', default=True, help='Paired End Mode')
-parser.add_argument('-q', '--single-end', dest='paired_end', action='store_false', help='Single End Mode')
-parser.add_argument('-C', '--no-checks', dest='no_check', action='store_true',
-						default=False, help='Skip sanity checks')
 
 # Core-seq as optional parameter
 parser.add_argument('-cs', '--core-seq', default=False, dest='coreseq', action='store_true', help='CORE-seq Mode')
 
 args = parser.parse_args()
 
-if not args.unmapped_bam:
+if args.single_or_paired == "paired":
+	args.paired_end = True
+else:
+	args.paired_end = False
+
+
+if not args.input:
 	parser.print_help() #or, print_usage() for less verbosity
 	raise SystemExit
 
@@ -69,13 +51,13 @@ if not args.unmapped_bam:
 # If 2 unmapped bam files are given, then these are to be merged.
 # Must be done here to initialize the sample name correctly
 merge = False
-if (len(args.unmapped_bam) > 1):
+if (len(args.input) > 1):
 	merge = True
 	if (args.sample_name == "default"):
 		args.sample_name = "merged";
 else:
 	if (args.sample_name == "default"):
-		args.sample_name = os.path.splitext(os.path.basename(args.unmapped_bam[0]))[0]
+		args.sample_name = os.path.splitext(os.path.basename(args.input[0]))[0]
 
 # Set up environment path variables
 ########################################################################################
@@ -88,7 +70,7 @@ paths.scripts_dir = os.path.dirname(os.path.realpath(__file__))
 
 # import the yaml config (work in progress)...
 import yaml
-pipelines_config_file = os.path.join(os.path.dirname(paths.scripts_dir), ".pipelines_config.yaml")
+pipelines_config_file = os.path.join(paths.scripts_dir, "rnaBitSeq.yaml")
 config = yaml.load(open(pipelines_config_file, 'r'))
 
 # Resources
@@ -121,17 +103,16 @@ paths.bed2bigBed = config["tools"]["bed2bigBed"]
 paths.bed2bigWig = config["tools"]["bed2bigWig"]
 
 
-
 # Output
-paths.pipeline_outfolder = os.path.join(args.project_root + args.sample_name + "/")
+paths.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name + "/")
 
 
 # Run some initial setting and logging code to start the pipeline.
 # Create a Pypiper object, and start the pipeline (runs initial setting and logging code to begin)
-mypiper = Pypiper(name="rnaBitSeq", outfolder=paths.pipeline_outfolder, args=args)
+mypiper = pypiper.PipelineManager(name="rnaBitSeq", outfolder=paths.pipeline_outfolder, args=args)
+ngstk = pypiper.NGSTk(args.config_file)
 
-
-print("N input bams:\t\t" + str(len(args.unmapped_bam)))
+print("N input bams:\t\t" + str(len(args.input)))
 print("Sample name:\t\t" + args.sample_name)
 
 sample_merged_bam = args.sample_name + ".merged.bam"
@@ -139,7 +120,7 @@ mypiper.make_sure_path_exists(paths.pipeline_outfolder + "unmapped_bam/")
 
 if merge and not os.path.isfile(sample_merged_bam):
 	print("Multiple unmapped bams found; merge requested")
-	input_bams = args.unmapped_bam;
+	input_bams = args.input;
 	print("input bams: " + str(input_bams))
 	merge_folder = os.path.join(paths.pipeline_outfolder, "unmapped_bam/")
 	input_string = " INPUT=" + " INPUT=".join(input_bams)
@@ -150,19 +131,19 @@ if merge and not os.path.isfile(sample_merged_bam):
 	cmd += " ASSUME_SORTED=TRUE"
 	cmd += " CREATE_INDEX=TRUE"
 
-	mypiper.call_lock(cmd, output_merge)
-	args.unmapped_bam = paths.pipeline_outfolder+"unmapped_bam/" + sample_merged_bam  #update unmapped bam reference
+	mypiper.run(cmd, output_merge)
+	args.input = paths.pipeline_outfolder+"unmapped_bam/" + sample_merged_bam  #update unmapped bam reference
 	local_unmapped_bam = paths.pipeline_outfolder+"unmapped_bam/" + sample_merged_bam
 else:
 	# Link the file into the unmapped_bam directory
 	print("Single unmapped bam found; no merge required")
-	print("Unmapped bam:\t\t" + str(args.unmapped_bam[0]))
-	args.unmapped_bam = args.unmapped_bam[0]
+	print("Unmapped bam:\t\t" + str(args.input[0]))
+	args.input = args.input[0]
 	local_unmapped_bam = paths.pipeline_outfolder+"unmapped_bam/"+args.sample_name+".bam"
-	mypiper.callprint("ln -sf " + args.unmapped_bam + " " + local_unmapped_bam, shell=True)
+	mypiper.callprint("ln -sf " + args.input + " " + local_unmapped_bam, shell=True)
 
 
-print("Input Unmapped Bam: " + args.unmapped_bam)
+print("Input Unmapped Bam: " + args.input)
 #check for file exists:
 if not os.path.isfile(local_unmapped_bam):
 	print local_unmapped_bam + "is not a file"
@@ -170,22 +151,24 @@ if not os.path.isfile(local_unmapped_bam):
 # Fastq conversion
 ########################################################################################
 # Uses ngstk module.
-
-mypiper.timestamp("### Fastq conversion: ")
-out_fastq_pre = os.path.join(paths.pipeline_outfolder, "fastq/", args.sample_name)
-cmd = ngstk.bam_to_fastq(local_unmapped_bam, out_fastq_pre, args.paired_end, paths)
-mypiper.call_lock(cmd, out_fastq_pre + "_R1.fastq")
-
-mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
-
 # Sanity checks:
-if not args.no_check:
-	raw_reads = ngstk.count_reads(local_unmapped_bam)
+
+def check_fastq():
+	raw_reads = ngstk.count_reads(local_unmapped_bam, args.paired_end)
 	mypiper.report_result("Raw_reads", str(raw_reads))
 	fastq_reads = ngstk.count_reads(out_fastq_pre + "_R1.fastq", paired_end=args.paired_end)
 	mypiper.report_result("Fastq_reads", fastq_reads)
 	if (fastq_reads != int(raw_reads)):
 		raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
+
+
+mypiper.timestamp("### Fastq conversion: ")
+out_fastq_pre = os.path.join(paths.pipeline_outfolder, "fastq/", args.sample_name)
+cmd = ngstk.bam_to_fastq(local_unmapped_bam, out_fastq_pre, args.paired_end)
+mypiper.run(cmd, out_fastq_pre + "_R1.fastq", follow=check_fastq)
+
+mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
+
 
 
 # Adapter trimming
@@ -217,12 +200,15 @@ if args.coreseq:
 else:
 	cmd += " ILLUMINACLIP:" + paths.adapter_file + ":2:10:4:1:true SLIDINGWINDOW:4:1 MAXINFO:16:0.40 MINLEN:21"
 
-mypiper.call_lock(cmd, out_fastq_pre + "_R1_trimmed.fastq")
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
 
-if not args.no_check:
-	x = ngstk.count_reads(trimmed_fastq,args.paired_end)
-	mypiper.report_result("Trimmed_reads", x)
+mypiper.run(cmd, out_fastq_pre + "_R1_trimmed.fastq", follow=lambda:
+				mypiper.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end)))
+
+
+
+
+
 
 # RNA BitSeq pipeline.
 ########################################################################################
@@ -245,20 +231,18 @@ else:
 	cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
 	cmd += " " + out_bowtie1
 
-mypiper.call_lock(cmd, out_bowtie1)
+mypiper.run(cmd, out_bowtie1, follow= lambda: mypiper.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
 
-if not args.no_check:
-	x = ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)
-	mypiper.report_result("Aligned_reads", x)
+
 
 mypiper.timestamp("### Raw: SAM to BAM conversion and sorting: ")
 
 if args.filter:
 	cmd = ngstk.sam_conversions(out_bowtie1,False)
-	mypiper.call_lock(cmd,  re.sub(".sam$" , "_sorted.bam",out_bowtie1),shell=True)
+	mypiper.run(cmd,  re.sub(".sam$" , "_sorted.bam",out_bowtie1),shell=True)
 else:
 	cmd = ngstk.sam_conversions(out_bowtie1,True)
-	mypiper.call_lock(cmd,  re.sub(".sam$" , "_sorted.depth",out_bowtie1),shell=True)
+	mypiper.run(cmd,  re.sub(".sam$" , "_sorted.depth",out_bowtie1),shell=True)
 
 mypiper.clean_add(out_bowtie1, conditional=False)
 mypiper.clean_add(re.sub(".sam$" , ".bam", out_bowtie1), conditional=False)
@@ -270,12 +254,9 @@ if not args.filter:
 	aligned_file = re.sub(".sam$" , "_sorted.bam",out_bowtie1)
 	out_file = re.sub(".sam$" , "_dedup.bam",out_bowtie1)
 	metrics_file = re.sub(".sam$" , "_dedup.metrics",out_bowtie1)
-	cmd = ngstk.markDuplicates(paths, aligned_file, out_file, metrics_file)
-	mypiper.call_lock(cmd, out_file)
+	cmd = ngstk.markDuplicates(aligned_file, out_file, metrics_file)
+	mypiper.run(cmd, out_file, follow= lambda: mypiper.report_result("Deduplicated_reads", ngstk.count_unique_mapped_reads(out_file, args.paired_end)))
 
-	if not args.no_check:
-		x = ngstk.count_unique_mapped_reads(out_file, args.paired_end)
-		mypiper.report_result("Deduplicated_reads", x)
 
 if args.filter:
 	mypiper.timestamp("### Aligned read filtering: ")
@@ -298,11 +279,7 @@ if args.filter:
 	if args.paired_end:
 		cmd = cmd + " --pairedEnd"
 
-	mypiper.call_lock(cmd, out_sam_filter)
-
-	if not args.no_check:
-		x = ngstk.count_unique_mapped_reads(out_sam_filter, args.paired_end)
-		mypiper.report_result("Filtered_reads", x)
+	mypiper.run(cmd, out_sam_filter,follow=mypiper.report_result("Filtered_reads", ngstk.count_unique_mapped_reads(out_sam_filter, args.paired_end)))
 
 
 #	Join skipped reads back in for bitseq.
@@ -338,12 +315,12 @@ if args.filter:
 	
 	mypiper.timestamp("### Filtered: SAM to BAM conversion, sorting and depth calculation: ")
 	cmd = ngstk.sam_conversions(out_sam_filter)
-	mypiper.call_lock(cmd, re.sub(".sam$" , "_sorted.depth",out_sam_filter),shell=True)
+	mypiper.run(cmd, re.sub(".sam$" , "_sorted.depth",out_sam_filter),shell=True)
 
 
 	mypiper.timestamp("### Skipped: SAM to BAM conversion and sorting: ")
 	cmd = ngstk.sam_conversions(skipped_sam,False)
-	mypiper.call_lock(cmd, re.sub(".sam$", "_sorted.bam", skipped_sam),shell=True)
+	mypiper.run(cmd, re.sub(".sam$", "_sorted.bam", skipped_sam),shell=True)
 	
 	mypiper.clean_add(skipped_sam, conditional=False)
 	mypiper.clean_add(re.sub(".sam$" , ".bam", skipped_sam), conditional=False)
@@ -357,12 +334,8 @@ if args.filter:
 	aligned_file = re.sub(".sam$" , "_sorted.bam",out_sam_filter)
 	out_file = re.sub(".sam$" , "_dedup.bam",out_sam_filter)
 	metrics_file = re.sub(".sam$" , "_dedup.metrics",out_sam_filter)
-	cmd = ngstk.markDuplicates(paths, aligned_file, out_file, metrics_file)
-	mypiper.call_lock(cmd, out_file)
-	
-	if not args.no_check:
-		x = ngstk.count_unique_mapped_reads(out_file, args.paired_end)
-		mypiper.report_result("Deduplicated_reads", x)
+	cmd = ngstk.markDuplicates(aligned_file, out_file, metrics_file)
+	mypiper.run(cmd, out_file,follow=lambda: mypiper.report_result("Deduplicated_reads", ngstk.count_unique_mapped_reads(out_file, args.paired_end)))
 
 
 
@@ -375,11 +348,11 @@ mypiper.make_sure_path_exists(bitSeq_dir)
 out_bitSeq = bitSeq_dir + "/" + args.sample_name + ".counts"
 
 if args.filter:
-	cmd = "Rscript " + paths.scripts_dir + "/bitSeq_parallel.R " + " " + out_sam_filter + " " + bitSeq_dir + " " + paths.ref_genome_fasta
+	cmd = "Rscript " + paths.scripts_dir + "/tools/bitSeq_parallel.R " + " " + out_sam_filter + " " + bitSeq_dir + " " + paths.ref_genome_fasta
 else:
-	cmd = "Rscript " + paths.scripts_dir + "/bitSeq_parallel.R " + " " + out_bowtie1 + " " + bitSeq_dir + " " + paths.ref_genome_fasta
+	cmd = "Rscript " + paths.scripts_dir + "/tools/bitSeq_parallel.R " + " " + out_bowtie1 + " " + bitSeq_dir + " " + paths.ref_genome_fasta
 
-mypiper.call_lock(cmd, out_bitSeq)
+mypiper.run(cmd, out_bitSeq)
 
 
 # ERCC Spike-in alignment
@@ -387,22 +360,25 @@ mypiper.call_lock(cmd, out_bitSeq)
 
 mypiper.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
-unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
-cmd = "samtools view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
-mypiper.call_lock(cmd, unmappable_bam, shell=True)
-
-
-cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end, paths)
-mypiper.call_lock(cmd, unmappable_bam + "_R1.fastq")
-
 # Sanity checks:
-if not args.no_check:
+def check_fastq_ERCC():
 	raw_reads = ngstk.count_reads(unmappable_bam + ".bam",args.paired_end)
 	mypiper.report_result("ERCC_raw_reads", str(raw_reads))
 	fastq_reads = ngstk.count_reads(unmappable_bam + "_R1.fastq", paired_end=args.paired_end)
 	mypiper.report_result("ERCC_fastq_reads", fastq_reads)
 	if (fastq_reads != int(raw_reads)):
 		raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
+
+
+unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
+cmd = "samtools view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
+mypiper.run(cmd, unmappable_bam, shell=True)
+
+
+cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
+mypiper.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
+
+
 
 
 
@@ -425,16 +401,12 @@ else:
 	cmd += " -2 " + unmappable_bam + "_R2.fastq"
 	cmd += " " + out_bowtie1
 
-mypiper.call_lock(cmd, out_bowtie1)
-
-if not args.no_check:
-	x = ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)
-	mypiper.report_result("ERCC_aligned_reads", x)
+mypiper.run(cmd, out_bowtie1,follow=lambda: mypiper.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
 
 
 mypiper.timestamp("### ERCC: SAM to BAM conversion, sorting and depth calculation: ")
 cmd = ngstk.sam_conversions(out_bowtie1)
-mypiper.call_lock(cmd, re.sub(".sam$" , "_sorted.depth", out_bowtie1), shell=True)
+mypiper.run(cmd, re.sub(".sam$" , "_sorted.depth", out_bowtie1), shell=True)
 
 mypiper.clean_add(out_bowtie1, conditional=False)
 mypiper.clean_add(re.sub(".sam$" , ".bam", out_bowtie1), conditional=False)
@@ -448,9 +420,9 @@ bitSeq_dir = bowtie1_folder + "/bitSeq"
 mypiper.make_sure_path_exists(bitSeq_dir)
 out_bitSeq = bitSeq_dir + "/" + re.sub(".aln.sam$" , ".counts",out_bowtie1)
 
-cmd = "Rscript " + paths.scripts_dir + "/bitSeq_parallel.R " + " " + out_bowtie1 + " " + bitSeq_dir + " " + paths.ref_ERCC_fasta
+cmd = "Rscript " + paths.scripts_dir + "/tools/bitSeq_parallel.R " + " " + out_bowtie1 + " " + bitSeq_dir + " " + paths.ref_ERCC_fasta
 
-mypiper.call_lock(cmd, out_bitSeq)
+mypiper.run(cmd, out_bitSeq)
 
 
 
