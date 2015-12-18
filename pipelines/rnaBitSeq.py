@@ -75,9 +75,7 @@ config = yaml.load(open(pipelines_config_file, 'r'))
 
 # Resources
 paths.resources_dir = config["resources"]["resources"]
-#paths.adapter_file = os.path.join(paths.resources_dir, "adapters", "epignome_adapters_2_add.fa")
 paths.adapter_file = config["resources"]["adapters"]
-#paths.ref_genome = os.path.join(paths.resources_dir, "genomes")
 paths.ref_genome = config["resources"]["genomes"]
 paths.ref_genome_fasta = os.path.join(paths.ref_genome, args.genome_assembly, args.genome_assembly + ".fa")
 paths.ref_ERCC_fasta = os.path.join(paths.ref_genome, args.ERCC_assembly, args.ERCC_assembly + ".fa")
@@ -89,17 +87,11 @@ paths.bowtie_indexed_ERCC = os.path.join(paths.ref_genome, args.ERCC_assembly, "
 # Tools
 paths.python = config["tools"]["python"]
 
-#paths.trimmomatic_jar = "/cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar"
 paths.trimmomatic_jar = config["tools"]["trimmomatic_epignome"]
-#paths.bowtie1 = "/cm/shared/apps/bowtie/1.1.1/bin/bowtie"
 paths.bowtie1 = config["tools"]["bowtie1"]
-#paths.bowtie2 = "/cm/shared/apps/bowtie/2.2.3/bin"
 paths.bowtie2 = config["tools"]["bowtie2"]
-#paths.picard_dir = os.path.join(paths.resources_dir, "tools/picard-tools-1.100")
 paths.picard_jar = config["tools"]["picard"]
-#paths.bed2bigBed = os.path.join(paths.resources_dir, "tools", "bedToBigBed")
 paths.bed2bigBed = config["tools"]["bed2bigBed"]
-#paths.bed2bigWig = os.path.join(paths.resources_dir, "tools", "bedGraphToBigWig")
 paths.bed2bigWig = config["tools"]["bed2bigWig"]
 
 
@@ -125,7 +117,7 @@ if merge and not os.path.isfile(sample_merged_bam):
 	merge_folder = os.path.join(paths.pipeline_outfolder, "unmapped_bam/")
 	input_string = " INPUT=" + " INPUT=".join(input_bams)
 	output_merge = os.path.join(merge_folder, sample_merged_bam)
-	cmd = "java -jar " + os.path.join(paths.picard_dir, "MergeSamFiles.jar")
+	cmd = "java -Xmx2g -jar " + paths.picard_jar + " MergeSamFiles"
 	cmd += input_string
 	cmd += " OUTPUT=" + output_merge
 	cmd += " ASSUME_SORTED=TRUE"
@@ -175,7 +167,7 @@ mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 ########################################################################################
 mypiper.timestamp("### Adapter trimming: ")
 
-cmd = "java -jar "+ paths.trimmomatic_jar
+cmd = "java -Xmx4g -jar "+ paths.trimmomatic_jar
 
 if not args.paired_end:
 	cmd += " SE -phred33 -threads 30"
