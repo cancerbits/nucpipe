@@ -1,0 +1,25 @@
+resources:
+  # paths to reference genomes, adapter files, and other required shared data
+  resources: /data/groups/lab_bock/shared/resources
+  genomes: /data/groups/lab_bock/shared/resources/genomes/
+  adapters: /data/groups/lab_bock/shared/resources/adapters/epignome_adapters_2_add.fa
+
+tools:
+  # absolute paths to required tools
+  python: /cm/shared/apps/python/2.7.6/bin/python
+  java: /cm/shared/apps/java/jdk/1.7.0_80/bin/java
+  Rscript: /cm/shared/apps/R/3.1.0/bin/Rscript
+  picard: /cm/shared/apps/picard-tools/1.140/picard.jar
+  trimmomatic_epignome: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar
+  bowtie1: /cm/shared/apps/bowtie/1.1.1/bin/bowtie
+  bowtie2: /cm/shared/apps/bowtie/2.2.4/bin/bowtie2
+  bed2bigBed: /data/groups/lab_bock/shared/resources/tools/bedToBigBed
+  bed2bigWig: /data/groups/lab_bock/shared/resources/tools/bedGraphToBigWig
+  samtools: /cm/shared/apps/samtools/1.2/bin/samtools
+  tophat2: /cm/shared/apps/tophat/2.0.13/bin/tophat2
+  bam2wig: /cm/shared/apps/RSeQC/2.3.9/bin/bam2wig.py
+  read_distribution: /cm/shared/apps/RSeQC/2.3.9/bin/read_distribution.py
+  gene_coverage: /cm/shared/apps/RSeQC/2.3.9/bin/geneBody_coverage2.py
+
+parameters:
+  # parameters passed to bioinformatic tools, subclassed by tool
