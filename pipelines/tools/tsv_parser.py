@@ -28,7 +28,7 @@ parser.add_argument('-c', '--col', dest='column',
 
 parser.add_argument('-r', '--rowmatch', dest='rowmatch',
 	default="", nargs="+", type=str,
-	help="Choose row(s) to extract; format: key=value. Multiple, space-separated
+	help="Choose row(s) to extract; format: key=value. Multiple, space-separated \
 	key=value pairs are accepted.",
 	required=False)
 
