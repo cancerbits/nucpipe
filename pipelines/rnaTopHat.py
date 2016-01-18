@@ -24,7 +24,7 @@ parser = pypiper.add_pypiper_args(parser, all_args=True)
 
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
 parser.add_argument('-d', dest='markDupl', action='store_true', default=False)
-parser.add_argument('-l', '--readLength', default=100, dest='readLength', type=int, help='read length')
+parser.add_argument('-w', '--wigsum', default=500000000, dest='wigsum', type=int, help='Target wigsum for track normalisation')
 
 
 # Core-seq as optional parameter
@@ -157,7 +157,9 @@ def check_fastq():
 
 out_fastq_pre = os.path.join(paths.pipeline_outfolder, "fastq/", args.sample_name)
 cmd = ngstk.bam_to_fastq(local_unmapped_bam, out_fastq_pre, args.paired_end)
-mypiper.run(cmd, out_fastq_pre + "_R1.fastq", follow=lambda: check_fastq)
+mypiper.run(cmd, out_fastq_pre + "_R1.fastq")
+
+check_fastq()
 
 mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 
@@ -192,9 +194,9 @@ else:
 	cmd += " ILLUMINACLIP:" + paths.adapter_file + ":2:10:4:1:true SLIDINGWINDOW:4:1 MAXINFO:16:0.40 MINLEN:21"
 
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
-mypiper.run(cmd, out_fastq_pre + "_R1_trimmed.fastq", follow= lambda:
-	mypiper.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end)))
+mypiper.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
 
+mypiper.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
 
 
 # RNA Tophat pipeline.
@@ -348,12 +350,10 @@ if args.filter:
 mypiper.timestamp("### bam2wig: ")
 if args.filter:
 	trackFile = re.sub(".sam$", "_sorted.bam", out_sam_filter)
-	alignedReads = ngstk.count_unique_mapped_reads(trackFile, args.paired_end and not align_paired_as_single)
-	wigSum = alignedReads*args.readLength
 	cmd = paths.bam2wig + " -i" + trackFile
 	cmd += " -s " + paths.chrom_sizes
 	cmd += " -o " + re.sub(".sam$" , "_sorted", out_sam_filter)
-	cmd += " -t " + str(wigSum)
+	cmd += " -t " + str(args.wigsum)
 	mypiper.run(cmd, re.sub(".sam$" , "_sorted.wig",out_sam_filter),shell=False)
 
 	mypiper.timestamp("### wigToBigWig: ")
@@ -364,12 +364,10 @@ if args.filter:
 
 else:
 	trackFile = re.sub(".bam$", "_sorted.bam",out_tophat)
-	alignedReads = ngstk.count_unique_mapped_reads(trackFile,args.paired_end and not align_paired_as_single)
-	wigSum = alignedReads*args.readLength
 	cmd = paths.bam2wig + " -i" + trackFile
 	cmd += " -s " + paths.chrom_sizes
 	cmd += " -o " + re.sub(".bam$" , "_sorted",out_tophat)
-	cmd += " -t " + str(wigSum)
+	cmd += " -t " + str(args.wigsum)
 	mypiper.run(cmd, re.sub(".bam$" , "_sorted.wig",out_tophat),shell=False)
 
 	mypiper.timestamp("### wigToBigWig: ")
