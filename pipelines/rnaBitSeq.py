@@ -157,7 +157,9 @@ def check_fastq():
 mypiper.timestamp("### Fastq conversion: ")
 out_fastq_pre = os.path.join(paths.pipeline_outfolder, "fastq/", args.sample_name)
 cmd = ngstk.bam_to_fastq(local_unmapped_bam, out_fastq_pre, args.paired_end)
-mypiper.run(cmd, out_fastq_pre + "_R1.fastq", follow=check_fastq)
+mypiper.run(cmd, out_fastq_pre + "_R1.fastq")
+
+check_fastq()
 
 mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 
@@ -194,8 +196,8 @@ else:
 
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
 
-mypiper.run(cmd, out_fastq_pre + "_R1_trimmed.fastq", follow=lambda:
-				mypiper.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end)))
+mypiper.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
+mypiper.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
 
 
 
@@ -223,8 +225,8 @@ else:
 	cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
 	cmd += " " + out_bowtie1
 
-mypiper.run(cmd, out_bowtie1, follow= lambda: mypiper.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
-
+mypiper.run(cmd, out_bowtie1)
+mypiper.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end))
 
 
 mypiper.timestamp("### Raw: SAM to BAM conversion and sorting: ")
