@@ -16,10 +16,10 @@ tools:
   bed2bigBed: /data/groups/lab_bock/shared/resources/tools/bedToBigBed
   bed2bigWig: /data/groups/lab_bock/shared/resources/tools/bedGraphToBigWig
   samtools: /cm/shared/apps/samtools/1.2/bin/samtools
-  tophat2: /cm/shared/apps/tophat/2.0.13/bin/tophat2
-  bam2wig: /cm/shared/apps/RSeQC/2.3.9/bin/bam2wig.py
-  read_distribution: /cm/shared/apps/RSeQC/2.3.9/bin/read_distribution.py
-  gene_coverage: /cm/shared/apps/RSeQC/2.3.9/bin/geneBody_coverage2.py
+  tophat2: /cm/shared/apps/tophat/2.0.14/bin/tophat2
+  bam2wig: /cm/shared/apps/RSeQC/2.6.1/cm/shared/apps/python/2.7.6/bin/bam2wig.py
+  read_distribution: /cm/shared/apps/RSeQC/2.6.1/cm/shared/apps/python/2.7.6/bin/read_distribution.py
+  gene_coverage: /cm/shared/apps/RSeQC/2.6.1/cm/shared/apps/python/2.7.6/bin/geneBody_coverage2.py
 
 parameters:
   # parameters passed to bioinformatic tools, subclassed by tool
