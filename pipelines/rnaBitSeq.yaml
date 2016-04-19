@@ -20,3 +20,7 @@ tools:
 
 parameters:
   # parameters passed to bioinformatic tools, subclassed by tool
+
+  trimmomatic:
+    memory: 4  # memory allocated to java VM in GB
+    threads: 4

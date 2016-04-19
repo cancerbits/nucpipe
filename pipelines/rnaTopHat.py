@@ -103,7 +103,7 @@ paths.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name + "
 
 # Create a Pypiper object, and start the pipeline (runs initial setting and logging code to begin)
 mypiper = pypiper.PipelineManager(name="rnaTopHat", outfolder=paths.pipeline_outfolder, args=args)
-ngstk = pypiper.NGSTk(args.config_file)
+ngstk = pypiper.NGSTk(pm=mypiper)
 
 print("N input bams:\t\t" + str(len(args.input)))
 print("Sample name:\t\t" + args.sample_name)

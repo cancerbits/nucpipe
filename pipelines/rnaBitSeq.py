@@ -28,6 +28,8 @@ parser = pypiper.add_pypiper_args(parser, all_args=True)
 
 parser.add_argument('-e', '--ercc', default="ERCC92",
 				dest='ERCC_assembly', type=str, help='ERCC Assembly')
+parser.add_argument('-em', '--ercc-mix',
+				dest='ERCC_mix', help='ERCC mix. If False no ERCC analysis will be performed.')
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
 
 # Core-seq as optional parameter
@@ -102,7 +104,7 @@ paths.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name + "
 # Run some initial setting and logging code to start the pipeline.
 # Create a Pypiper object, and start the pipeline (runs initial setting and logging code to begin)
 mypiper = pypiper.PipelineManager(name="rnaBitSeq", outfolder=paths.pipeline_outfolder, args=args)
-ngstk = pypiper.NGSTk(args.config_file)
+ngstk = pypiper.NGSTk(pm=mypiper)
 
 print("N input bams:\t\t" + str(len(args.input)))
 print("Sample name:\t\t" + args.sample_name)
@@ -351,72 +353,72 @@ mypiper.run(cmd, out_bitSeq)
 
 # ERCC Spike-in alignment
 ########################################################################################
+if not ( type(args.ERCC_mix) is bool and args.ERCC_mix is False ):
+	mypiper.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
-mypiper.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
-
-# Sanity checks:
-def check_fastq_ERCC():
-	raw_reads = ngstk.count_reads(unmappable_bam + ".bam",args.paired_end)
-	mypiper.report_result("ERCC_raw_reads", str(raw_reads))
-	fastq_reads = ngstk.count_reads(unmappable_bam + "_R1.fastq", paired_end=args.paired_end)
-	mypiper.report_result("ERCC_fastq_reads", fastq_reads)
-	if (fastq_reads != int(raw_reads)):
-		raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
-
-
-unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
-cmd = "samtools view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
-mypiper.run(cmd, unmappable_bam, shell=True)
+	# Sanity checks:
+	def check_fastq_ERCC():
+		raw_reads = ngstk.count_reads(unmappable_bam + ".bam",args.paired_end)
+		mypiper.report_result("ERCC_raw_reads", str(raw_reads))
+		fastq_reads = ngstk.count_reads(unmappable_bam + "_R1.fastq", paired_end=args.paired_end)
+		mypiper.report_result("ERCC_fastq_reads", fastq_reads)
+		if (fastq_reads != int(raw_reads)):
+			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
 
 
-cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
-mypiper.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
+	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
+	cmd = "samtools view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
+	mypiper.run(cmd, unmappable_bam, shell=True)
 
 
+	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
+	mypiper.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
 
 
 
-mypiper.timestamp("### ERCC: Bowtie1 alignment: ")
-bowtie1_folder = paths.pipeline_outfolder + "/bowtie1_" + args.ERCC_assembly + "/"
-mypiper.make_sure_path_exists(bowtie1_folder)
-out_bowtie1 = bowtie1_folder + args.sample_name + "_ERCC.aln.sam"
-
-if not args.paired_end:
-	cmd = paths.bowtie1
-	cmd += " -q -p 6 -a -m 100 --sam "
-	cmd += paths.bowtie_indexed_ERCC + " "
-	cmd += unmappable_bam + "_R1.fastq"
-	cmd += " " + out_bowtie1
-else:
-	cmd = paths.bowtie1
-	cmd += " -q -p 6 -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
-	cmd += paths.bowtie_indexed_ERCC
-	cmd += " -1 " + unmappable_bam + "_R1.fastq"
-	cmd += " -2 " + unmappable_bam + "_R2.fastq"
-	cmd += " " + out_bowtie1
-
-mypiper.run(cmd, out_bowtie1,follow=lambda: mypiper.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
 
 
-mypiper.timestamp("### ERCC: SAM to BAM conversion, sorting and depth calculation: ")
-cmd = ngstk.sam_conversions(out_bowtie1)
-mypiper.run(cmd, re.sub(".sam$" , "_sorted.depth", out_bowtie1), shell=True)
+	mypiper.timestamp("### ERCC: Bowtie1 alignment: ")
+	bowtie1_folder = paths.pipeline_outfolder + "/bowtie1_" + args.ERCC_assembly + "/"
+	mypiper.make_sure_path_exists(bowtie1_folder)
+	out_bowtie1 = bowtie1_folder + args.sample_name + "_ERCC.aln.sam"
 
-mypiper.clean_add(out_bowtie1, conditional=False)
-mypiper.clean_add(re.sub(".sam$" , ".bam", out_bowtie1), conditional=False)
-mypiper.clean_add(unmappable_bam + "*.fastq", conditional=False)
+	if not args.paired_end:
+		cmd = paths.bowtie1
+		cmd += " -q -p 6 -a -m 100 --sam "
+		cmd += paths.bowtie_indexed_ERCC + " "
+		cmd += unmappable_bam + "_R1.fastq"
+		cmd += " " + out_bowtie1
+	else:
+		cmd = paths.bowtie1
+		cmd += " -q -p 6 -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
+		cmd += paths.bowtie_indexed_ERCC
+		cmd += " -1 " + unmappable_bam + "_R1.fastq"
+		cmd += " -2 " + unmappable_bam + "_R2.fastq"
+		cmd += " " + out_bowtie1
+
+	mypiper.run(cmd, out_bowtie1,follow=lambda: mypiper.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
+
+
+	mypiper.timestamp("### ERCC: SAM to BAM conversion, sorting and depth calculation: ")
+	cmd = ngstk.sam_conversions(out_bowtie1)
+	mypiper.run(cmd, re.sub(".sam$" , "_sorted.depth", out_bowtie1), shell=True)
+
+	mypiper.clean_add(out_bowtie1, conditional=False)
+	mypiper.clean_add(re.sub(".sam$" , ".bam", out_bowtie1), conditional=False)
+	mypiper.clean_add(unmappable_bam + "*.fastq", conditional=False)
 
 # BitSeq
 ########################################################################################
-mypiper.timestamp("### ERCC: Expression analysis (BitSeq): ")
+	mypiper.timestamp("### ERCC: Expression analysis (BitSeq): ")
 
-bitSeq_dir = bowtie1_folder + "/bitSeq"
-mypiper.make_sure_path_exists(bitSeq_dir)
-out_bitSeq = bitSeq_dir + "/" + re.sub(".aln.sam$" , ".counts",out_bowtie1)
+	bitSeq_dir = bowtie1_folder + "/bitSeq"
+	mypiper.make_sure_path_exists(bitSeq_dir)
+	out_bitSeq = bitSeq_dir + "/" + re.sub(".aln.sam$" , ".counts",out_bowtie1)
 
-cmd = "Rscript " + paths.scripts_dir + "/tools/bitSeq_parallel.R " + " " + out_bowtie1 + " " + bitSeq_dir + " " + paths.ref_ERCC_fasta
+	cmd = "Rscript " + paths.scripts_dir + "/tools/bitSeq_parallel.R " + " " + out_bowtie1 + " " + bitSeq_dir + " " + paths.ref_ERCC_fasta
 
-mypiper.run(cmd, out_bitSeq)
+	mypiper.run(cmd, out_bitSeq)
 
 
 
