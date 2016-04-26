@@ -37,6 +37,7 @@ parser.add_argument('-cs', '--core-seq', default=False, dest='coreseq', action='
 
 args = parser.parse_args()
 
+
 if args.single_or_paired == "paired":
 	args.paired_end = True
 else:
@@ -353,7 +354,7 @@ mypiper.run(cmd, out_bitSeq)
 
 # ERCC Spike-in alignment
 ########################################################################################
-if not ( type(args.ERCC_mix) is bool and args.ERCC_mix is False ):
+if not (args.ERCC_mix == "False" ):
 	mypiper.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
 	# Sanity checks:
