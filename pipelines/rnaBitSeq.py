@@ -53,14 +53,15 @@ if not args.input:
 ########################################################################################
 # If 2 unmapped bam files are given, then these are to be merged.
 # Must be done here to initialize the sample name correctly
-merge = False
-if (len(args.input) > 1):
-	merge = True
-	if (args.sample_name == "default"):
-		args.sample_name = "merged";
-else:
-	if (args.sample_name == "default"):
-		args.sample_name = os.path.splitext(os.path.basename(args.input[0]))[0]
+# This is now deprecated (there is no default sample name implemented)
+#merge = False
+#if (len(args.input) > 1):
+#	merge = True
+#	if (args.sample_name == "default"):
+#		args.sample_name = "merged";
+#else:
+#	if (args.sample_name == "default"):
+#		args.sample_name = os.path.splitext(os.path.basename(args.input[0]))[0]
 
 # Set up environment path variables
 ########################################################################################
@@ -101,72 +102,35 @@ paths.bed2bigWig = config["tools"]["bed2bigWig"]
 # Output
 paths.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name + "/")
 
-
-# Run some initial setting and logging code to start the pipeline.
-# Create a Pypiper object, and start the pipeline (runs initial setting and logging code to begin)
+# Initialize
 mypiper = pypiper.PipelineManager(name="rnaBitSeq", outfolder=paths.pipeline_outfolder, args=args)
 ngstk = pypiper.NGSTk(pm=mypiper)
 
-print("N input bams:\t\t" + str(len(args.input)))
 print("Sample name:\t\t" + args.sample_name)
 
-sample_merged_bam = args.sample_name + ".merged.bam"
-mypiper.make_sure_path_exists(paths.pipeline_outfolder + "unmapped_bam/")
+# Merge/Link sample input
+################################################################################
+# This command should now handle all the merging.
+local_input_file = ngstk.create_local_input(paths.pipeline_outfolder, args.input, args.sample_name)
 
-if merge and not os.path.isfile(sample_merged_bam):
-	print("Multiple unmapped bams found; merge requested")
-	input_bams = args.input;
-	print("input bams: " + str(input_bams))
-	merge_folder = os.path.join(paths.pipeline_outfolder, "unmapped_bam/")
-	input_string = " INPUT=" + " INPUT=".join(input_bams)
-	output_merge = os.path.join(merge_folder, sample_merged_bam)
-	cmd = "java -Xmx2g -jar " + paths.picard_jar + " MergeSamFiles"
-	cmd += input_string
-	cmd += " OUTPUT=" + output_merge
-	cmd += " ASSUME_SORTED=TRUE"
-	cmd += " CREATE_INDEX=TRUE"
+print("Local input file: " + local_input_file) 
 
-	mypiper.run(cmd, output_merge)
-	args.input = paths.pipeline_outfolder+"unmapped_bam/" + sample_merged_bam  #update unmapped bam reference
-	local_unmapped_bam = paths.pipeline_outfolder+"unmapped_bam/" + sample_merged_bam
-else:
-	# Link the file into the unmapped_bam directory
-	print("Single unmapped bam found; no merge required")
-	print("Unmapped bam:\t\t" + str(args.input[0]))
-	args.input = args.input[0]
-	local_unmapped_bam = paths.pipeline_outfolder+"unmapped_bam/"+args.sample_name+".bam"
-	mypiper.callprint("ln -sf " + args.input + " " + local_unmapped_bam, shell=True)
-
-
-print("Input Unmapped Bam: " + args.input)
-#check for file exists:
-if not os.path.isfile(local_unmapped_bam):
-	print local_unmapped_bam + "is not a file"
+# Make sure file exists:
+if not os.path.isfile(local_input_file):
+	print local_input_file + " is not a file"
 
 # Fastq conversion
 ########################################################################################
-# Uses ngstk module.
-# Sanity checks:
-
-def check_fastq():
-	raw_reads = ngstk.count_reads(local_unmapped_bam, args.paired_end)
-	mypiper.report_result("Raw_reads", str(raw_reads))
-	fastq_reads = ngstk.count_reads(out_fastq_pre + "_R1.fastq", paired_end=args.paired_end)
-	mypiper.report_result("Fastq_reads", fastq_reads)
-	if (fastq_reads != int(raw_reads)):
-		raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
-
-
 mypiper.timestamp("### Fastq conversion: ")
-out_fastq_pre = os.path.join(paths.pipeline_outfolder, "fastq/", args.sample_name)
-cmd = ngstk.bam_to_fastq(local_unmapped_bam, out_fastq_pre, args.paired_end)
-mypiper.run(cmd, out_fastq_pre + "_R1.fastq")
+# New fastq conversion (can handle .bam or .fastq.gz files)
 
-check_fastq()
+cmd, fastq_folder, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_file, paths.pipeline_outfolder, args.sample_name, args.paired_end)
+
+ngstk.make_sure_path_exists(fastq_folder)
+
+mypiper.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_file, unaligned_fastq, args.paired_end))
 
 mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
-
-
 
 # Adapter trimming
 ########################################################################################
