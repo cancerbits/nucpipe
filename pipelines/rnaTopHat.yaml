@@ -6,16 +6,17 @@ resources:
 
 tools:
   # absolute paths to required tools
-  python: /cm/shared/apps/python/2.7.6/bin/python
-  java: /cm/shared/apps/java/jdk/1.7.0_80/bin/java
-  Rscript: /cm/shared/apps/R/3.1.0/bin/Rscript
+  python: python
+  java: java
+  Rscript: Rscript
+  samtools: samtools
   picard: /cm/shared/apps/picard-tools/1.140/picard.jar
+  trimmomatic: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32.jar
   trimmomatic_epignome: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar
   bowtie1: /cm/shared/apps/bowtie/1.1.1/bin/bowtie
   bowtie2: /cm/shared/apps/bowtie/2.2.4/bin/bowtie2
   bed2bigBed: /data/groups/lab_bock/shared/resources/tools/bedToBigBed
   bed2bigWig: /data/groups/lab_bock/shared/resources/tools/bedGraphToBigWig
-  samtools: /cm/shared/apps/samtools/1.2/bin/samtools
   tophat2: /cm/shared/apps/tophat/2.0.14/bin/tophat2
   bam2wig: /cm/shared/apps/RSeQC/2.6.1/cm/shared/apps/python/2.7.6/bin/bam2wig.py
   read_distribution: /cm/shared/apps/RSeQC/2.6.1/cm/shared/apps/python/2.7.6/bin/read_distribution.py
@@ -24,5 +25,3 @@ tools:
 parameters:
   # parameters passed to bioinformatic tools, subclassed by tool
   trimmomatic:
-    memory: 4  # memory allocated to java VM in GB
-    threads: 4
