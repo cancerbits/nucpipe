@@ -107,45 +107,37 @@ ngstk = pypiper.NGSTk(pm=mypiper)
 
 print("Sample name:\t\t" + args.sample_name)
 
-# Merge/Link sample input
+# Merge/Link sample input and Fastq conversion
+# These commands merge (if required) or link, then ensure any (bam, fastq, or gz)
+# files are correctly converted to fastq/*.fastq files.
 ################################################################################
-# This command should now handle all the merging.
-local_input_file = ngstk.create_local_input(paths.pipeline_outfolder, args.input, args.sample_name)
+mypiper.timestamp("### Merging/Linking and fastq conversion: ")
 
-print("Local input file: " + local_input_file) 
+local_input_files = ngstk.create_multiple_local_inputs(paths.pipeline_outfolder, [args.input, args.input2], args.sample_name)
 
-# Make sure file exists:
-if not os.path.isfile(local_input_file):
-	print local_input_file + " is not a file"
+fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
 
-# Fastq conversion
-########################################################################################
-mypiper.timestamp("### Fastq conversion: ")
-# New fastq conversion (can handle .bam or .fastq.gz files)
+cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
 
-cmd, fastq_folder, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_file, paths.pipeline_outfolder, args.sample_name, args.paired_end)
-
-ngstk.make_sure_path_exists(fastq_folder)
-
-mypiper.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_file, unaligned_fastq, args.paired_end))
+mypiper.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
 
 mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 
 # Adapter trimming
-########################################################################################
+################################################################################
 mypiper.timestamp("### Adapter trimming: ")
 
 cmd = "java -Xmx4g -jar "+ paths.trimmomatic_jar
 
 if not args.paired_end:
 	cmd += " SE -phred33 -threads 30"
-	cmd += " -trimlog " + os.path.join(paths.pipeline_outfolder, "fastq/") + "trimlog.log "
+	cmd += " -trimlog " + fastq_folder + "trimlog.log "
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
 
 else:
 	cmd += " PE -phred33 -threads 30"
-	cmd += " -trimlog " + os.path.join(paths.pipeline_outfolder, "fastq/") + "trimlog.log "
+	cmd += " -trimlog " + fastq_folder + "trimlog.log "
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R2.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
