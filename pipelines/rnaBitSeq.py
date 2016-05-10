@@ -95,12 +95,12 @@ pm.timestamp("### Adapter trimming: ")
 cmd = tools.java + " -Xmx" + str(pm.mem) + " -jar " + tools.trimmomatic_epignome
 
 if not args.paired_end:
-	cmd += " SE -phred33 -threads 30 "
+	cmd += " SE -phred33 -threads " + str(pm.cores)
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
 
 else:
-	cmd += " PE -phred33 -threads 30 "
+	cmd += " PE -phred33 -threads " + str(pm.cores)
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R2.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
@@ -225,7 +225,7 @@ if args.filter:
 ########################################################################################
 pm.timestamp("### Expression analysis (BitSeq): ")
 
-bitSeq_dir = of.path.join(bowtie1_folder,"bitSeq")
+bitSeq_dir = os.path.join(bowtie1_folder,"bitSeq")
 pm.make_sure_path_exists(bitSeq_dir)
 out_bitSeq = os.path.join(bitSeq_dir, args.sample_name + ".counts")
 

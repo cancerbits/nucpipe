@@ -94,12 +94,12 @@ pm.timestamp("### Adapter trimming: ")
 cmd = tools.java + " -Xmx" + str(pm.mem) + " -jar " + tools.trimmomatic_epignome
 
 if not args.paired_end:
-	cmd += " SE -phred33 -threads 30 "
+	cmd += " SE -phred33 -threads " + str(pm.cores)
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
 
 else:
-	cmd += " PE -phred33 -threads 30 "
+	cmd += " PE -phred33 -threads " + str(pm.cores)
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R2.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
@@ -141,7 +141,7 @@ align_paired_as_single = True # FH: this appears to be the default behavior of t
 if not args.paired_end:
 	cmd = tools.tophat2
 	cmd += " --GTF " + resources.gtf
-	cmd += " --b2-L 15 --library-type fr-unstranded --mate-inner-dist 150 --max-multihits 100 --no-coverage-search --num-threads 2"
+	cmd += " --b2-L 15 --library-type fr-unstranded --mate-inner-dist 150 --max-multihits 100 --no-coverage-search --num-threads " + str(pm.cores)
 	cmd += " --output-dir " + tophat_folder
 	cmd += " " + resources.bowtie_indexed_genome
 	cmd += " " + out_fastq_pre + "_R1_trimmed.fastq"
@@ -149,7 +149,7 @@ if not args.paired_end:
 else:
 	cmd = tools.tophat2
 	cmd += " --GTF " + resources.gtf
-	cmd += " --b2-L 15 --library-type fr-unstranded --mate-inner-dist 150 --max-multihits 100 --no-coverage-search --num-threads 2"
+	cmd += " --b2-L 15 --library-type fr-unstranded --mate-inner-dist 150 --max-multihits 100 --no-coverage-search --num-threads " + str(pm.cores)
 	cmd += " --output-dir " + tophat_folder
 	cmd += " " + resources.bowtie_indexed_genome
 	# FH: if you use this code, you align both mates separately. As a result, the count_unique_mapped_reads method in paired-end mode will return 0, because the mate flags are not set
@@ -234,7 +234,7 @@ if args.filter:
 pm.timestamp("### bam2wig: ")
 if args.filter:
 	trackFile = re.sub(".sam$", "_sorted.bam", out_sam_filter)
-	cmd = tools.bam2wig + " -i" + trackFile
+	cmd = tools.bam2wig + " -i " + trackFile
 	cmd += " -s " + resources.chrom_sizes
 	cmd += " -o " + re.sub(".sam$" , "_sorted", out_sam_filter)
 	cmd += " -t " + str(args.wigsum)
@@ -248,7 +248,7 @@ if args.filter:
 
 else:
 	trackFile = re.sub(".bam$", "_sorted.bam",out_tophat)
-	cmd = tools.bam2wig + " -i" + trackFile
+	cmd = tools.bam2wig + " -i " + trackFile
 	cmd += " -s " + resources.chrom_sizes
 	cmd += " -o " + re.sub(".bam$" , "_sorted",out_tophat)
 	cmd += " -t " + str(args.wigsum)
@@ -262,13 +262,13 @@ else:
 
 pm.timestamp("### read_distribution: ")
 cmd = tools.read_distribution + " -i " + trackFile
-cmd	+= " -r " + resources.gene_model_bed
+cmd += " -r " + resources.gene_model_bed
 cmd += " > " + re.sub("_sorted.bam$", "_read_distribution.txt",trackFile)
 pm.run(cmd, re.sub("_sorted.bam$", "_read_distribution.txt",trackFile),shell=True)
 
 pm.timestamp("### gene_coverage: ")
 cmd = tools.gene_coverage + " -i " + re.sub(".bam$" , ".bw",trackFile)
-cmd	+= " -r " + resources.gene_model_sub_bed
+cmd += " -r " + resources.gene_model_sub_bed
 cmd += " -o " + re.sub("_sorted.bam$", "",trackFile)
 pm.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell=False)
 
