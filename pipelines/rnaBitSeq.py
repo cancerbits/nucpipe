@@ -26,10 +26,15 @@ parser = pypiper.add_pypiper_args(parser, all_args=True)
 
 # Add any pipeline-specific arguments
 
-parser.add_argument('-e', '--ercc', default="ERCC92",
-				dest='ERCC_assembly', type=str, help='ERCC Assembly')
+parser.add_argument('-e', '--ercc',
+				default = "ERCC92",
+				dest = 'ERCC_assembly',
+				type = str,
+				help = 'ERCC Assembly')
 parser.add_argument('-em', '--ercc-mix',
-				dest='ERCC_mix', help='ERCC mix. If False no ERCC analysis will be performed.')
+				type = bool,
+				dest = 'ERCC_mix',
+				help = 'ERCC mix. If False no ERCC analysis will be performed.')
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
 
 # Core-seq as optional parameter
