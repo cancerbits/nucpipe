@@ -107,15 +107,16 @@ ngstk = pypiper.NGSTk(pm=mypiper)
 
 print("Sample name:\t\t" + args.sample_name)
 
+raw_folder = os.path.join(paths.pipeline_outfolder, "raw/")
+fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
+
 # Merge/Link sample input and Fastq conversion
 # These commands merge (if required) or link, then ensure any (bam, fastq, or gz)
 # files are correctly converted to fastq/*.fastq files.
 ################################################################################
 mypiper.timestamp("### Merging/Linking and fastq conversion: ")
 
-local_input_files = ngstk.create_multiple_local_inputs(paths.pipeline_outfolder, [args.input, args.input2], args.sample_name)
-
-fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
+local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
 
 cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
 
@@ -335,23 +336,38 @@ if not ( type(args.ERCC_mix) is bool and args.ERCC_mix is False ):
 
 
 	mypiper.timestamp("### ERCC: Bowtie1 alignment: ")
-	bowtie1_folder = paths.pipeline_outfolder + "/bowtie1_" + args.ERCC_assembly + "/"
+	bowtie2_folder = paths.pipeline_outfolder + "/bowtie1_" + args.ERCC_assembly + "/"
 	mypiper.make_sure_path_exists(bowtie1_folder)
-	out_bowtie1 = bowtie1_folder + args.sample_name + "_ERCC.aln.sam"
+	out_bowtie2 = bowtie2_folder + args.sample_name + "_ERCC.aln.sam"
 
 	if not args.paired_end:
-		cmd = paths.bowtie1
-		cmd += " -q -p 6 -a -m 100 --sam "
+		cmd = paths.bowtie2
+		cmd += " -q -p 6 -k 100 "
 		cmd += paths.bowtie_indexed_ERCC + " "
 		cmd += unmappable_bam + "_R1.fastq"
-		cmd += " " + out_bowtie1
+		cmd += " -S " + out_bowtie2
 	else:
 		cmd = paths.bowtie1
-		cmd += " -q -p 6 -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
+		cmd += " -q -p 6 -k 100 --minins 0 --maxins 5000 "
 		cmd += paths.bowtie_indexed_ERCC
 		cmd += " -1 " + unmappable_bam + "_R1.fastq"
 		cmd += " -2 " + unmappable_bam + "_R2.fastq"
-		cmd += " " + out_bowtie1
+		cmd += " -S " + out_bowtie2
+
+
+#	if not args.paired_end:
+#		cmd = paths.bowtie1
+#		cmd += " -q -p 6 -a -m 100 --sam "
+#		cmd += paths.bowtie_indexed_ERCC + " "
+#		cmd += unmappable_bam + "_R1.fastq"
+#		cmd += " " + out_bowtie1
+#	else:
+#		cmd = paths.bowtie1
+#		cmd += " -q -p 6 -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
+#		cmd += paths.bowtie_indexed_ERCC
+#		cmd += " -1 " + unmappable_bam + "_R1.fastq"
+#		cmd += " -2 " + unmappable_bam + "_R2.fastq"
+#		cmd += " " + out_bowtie1
 
 	mypiper.run(cmd, out_bowtie1,follow=lambda: mypiper.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
 
