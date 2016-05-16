@@ -107,30 +107,22 @@ ngstk = pypiper.NGSTk(pm=mypiper)
 
 print("Sample name:\t\t" + args.sample_name)
 
-# Merge/Link sample input
+raw_folder = os.path.join(paths.pipeline_outfolder, "raw/")
+fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
+
+# Merge/Link sample input and Fastq conversion
+# These commands merge (if required) or link, then ensure any (bam, fastq, or gz)
+# files are correctly converted to fastq/*.fastq files.
 ################################################################################
-# This command should now handle all the merging.
-local_input_file = ngstk.create_local_input(paths.pipeline_outfolder, args.input, args.sample_name)
+mypiper.timestamp("### Merging/Linking and fastq conversion: ")
 
-print("Local input file: " + local_input_file) 
+local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
 
-# Make sure file exists:
-if not os.path.isfile(local_input_file):
-	print local_input_file + " is not a file"
+cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
 
-# Fastq conversion
-################################################################################
-mypiper.timestamp("### Fastq conversion: ")
-# New fastq conversion (can handle .bam or .fastq.gz files)
-
-cmd, fastq_folder, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_file, paths.pipeline_outfolder, args.sample_name, args.paired_end)
-
-ngstk.make_sure_path_exists(fastq_folder)
-
-mypiper.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_file, unaligned_fastq, args.paired_end))
+mypiper.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
 
 mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
-
 # Adapter trimming
 ################################################################################
 mypiper.timestamp("### Adapter trimming: ")
