@@ -160,8 +160,8 @@ else:
 
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
 
-mypiper.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
-mypiper.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
+mypiper.run(cmd, out_fastq_pre + "_R1_trimmed.fastq",
+	follow = lambda: mypiper.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end)))
 
 
 
@@ -189,8 +189,8 @@ else:
 	cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
 	cmd += " " + out_bowtie1
 
-mypiper.run(cmd, out_bowtie1)
-mypiper.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end))
+mypiper.run(cmd, out_bowtie1,
+	follow=lambda: mypiper.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
 
 
 mypiper.timestamp("### Raw: SAM to BAM conversion and sorting: ")
