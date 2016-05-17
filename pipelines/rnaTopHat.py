@@ -102,8 +102,8 @@ paths.gene_coverage = config["tools"]["gene_coverage"]
 paths.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name + "/")
 
 # Initialize
-mypiper = pypiper.PipelineManager(name="rnaTopHat", outfolder=paths.pipeline_outfolder, args=args)
-ngstk = pypiper.NGSTk(pm=mypiper)
+pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=paths.pipeline_outfolder, args=args)
+ngstk = pypiper.NGSTk(pm=pm)
 
 print("Sample name:\t\t" + args.sample_name)
 
@@ -114,18 +114,18 @@ fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
 # These commands merge (if required) or link, then ensure any (bam, fastq, or gz)
 # files are correctly converted to fastq/*.fastq files.
 ################################################################################
-mypiper.timestamp("### Merging/Linking and fastq conversion: ")
+pm.timestamp("### Merging/Linking and fastq conversion: ")
 
 local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
 
 cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
 
-mypiper.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
+pm.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
 
-mypiper.clean_add(out_fastq_pre + "*.fastq", conditional=True)
+pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 # Adapter trimming
 ################################################################################
-mypiper.timestamp("### Adapter trimming: ")
+pm.timestamp("### Adapter trimming: ")
 
 cmd = "java -Xmx4g -jar "+ paths.trimmomatic_jar
 
@@ -153,16 +153,16 @@ else:
 	cmd += " ILLUMINACLIP:" + paths.adapter_file + ":2:10:4:1:true SLIDINGWINDOW:4:1 MAXINFO:16:0.40 MINLEN:21"
 
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
-mypiper.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
+pm.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
 
-mypiper.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
+pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
 
 
 # RNA Tophat pipeline.
 ########################################################################################
-mypiper.timestamp("### TopHat alignment: ")
+pm.timestamp("### TopHat alignment: ")
 tophat_folder = paths.pipeline_outfolder + "/tophat_" + args.genome_assembly + "/"
-mypiper.make_sure_path_exists(tophat_folder)
+pm.make_sure_path_exists(tophat_folder)
 out_tophat = tophat_folder + args.sample_name + ".aln.bam"
 
 align_paired_as_single = True # FH: this appears to be the default behavior of the pipeline at the moment. Should that be configurable by args?
@@ -188,39 +188,39 @@ else:
 		cmd += " " + out_fastq_pre + "_R1_trimmed.fastq"
 		cmd += " " + out_fastq_pre + "_R2_trimmed.fastq"
 
-mypiper.run(cmd, tophat_folder + "/align_summary.txt", shell=False)
+pm.run(cmd, tophat_folder + "/align_summary.txt", shell=False)
 
-mypiper.timestamp("### renaming tophat aligned bam file ")
+pm.timestamp("### renaming tophat aligned bam file ")
 cmd = "mv " + tophat_folder + "/accepted_hits.bam " + out_tophat
-mypiper.run(cmd, out_tophat, shell=False, follow=lambda:
-	mypiper.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_tophat,args.paired_end and not align_paired_as_single)))
+pm.run(cmd, out_tophat, shell=False, follow=lambda:
+	pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_tophat,args.paired_end and not align_paired_as_single)))
 
 
 
 
 
-mypiper.timestamp("### BAM to SAM sorting and indexing: ")
+pm.timestamp("### BAM to SAM sorting and indexing: ")
 if args.filter:
 	cmd = ngstk.bam_conversions(out_tophat,False)
-	mypiper.run(cmd,  re.sub(".bam$", "_sorted.bam", out_tophat) ,shell=True)
+	pm.run(cmd,  re.sub(".bam$", "_sorted.bam", out_tophat) ,shell=True)
 else:
 	cmd = ngstk.bam_conversions(out_tophat,True)
-	mypiper.run(cmd, re.sub(".bam$", "_sorted.depth", out_tophat),shell=True)
+	pm.run(cmd, re.sub(".bam$", "_sorted.depth", out_tophat),shell=True)
 
-mypiper.clean_add(out_tophat, conditional=False)
-mypiper.clean_add(re.sub(".bam$" , ".sam", out_tophat), conditional=False)
+pm.clean_add(out_tophat, conditional=False)
+pm.clean_add(re.sub(".bam$" , ".sam", out_tophat), conditional=False)
 
 
 
 if not args.filter and args.markDupl:
-	mypiper.timestamp("### MarkDuplicates: ")
+	pm.timestamp("### MarkDuplicates: ")
 
 	aligned_file = re.sub(".sam$", "_sorted.bam",  out_tophat)
 	out_file = re.sub(".sam$", "_dedup.bam", out_tophat)
 	metrics_file = re.sub(".sam$", "_dedup.metrics", out_tophat)
 	cmd = ngstk.markDuplicates(aligned_file, out_file, metrics_file)
-	mypiper.run(cmd, out_file, follow= lambda:
-		mypiper.report_result("Deduplicated_reads", ngstk.count_unique_mapped_reads(out_file, args.paired_end and not align_paired_as_single)))
+	pm.run(cmd, out_file, follow= lambda:
+		pm.report_result("Deduplicated_reads", ngstk.count_unique_mapped_reads(out_file, args.paired_end and not align_paired_as_single)))
 
 
 
@@ -229,7 +229,7 @@ if not args.filter and args.markDupl:
 ########################################################################################
 
 if args.filter:
-	mypiper.timestamp("### Aligned read filtering: ")
+	pm.timestamp("### Aligned read filtering: ")
 
 	out_sam_filter = tophat_folder + args.sample_name + ".aln.filt.sam"
 	headerLines = subprocess.check_output("samtools view -SH " + re.sub(".bam$", ".sam", out_tophat) + "|wc -l", shell=True).strip()
@@ -249,77 +249,77 @@ if args.filter:
 	if args.paired_end and not align_paired_as_single:
 		cmd = cmd + " --pairedEnd"
 
-	mypiper.run(cmd, out_sam_filter, follow=lambda:
-		mypiper.report_result("Filtered_reads", ngstk.count_unique_mapped_reads(out_sam_filter, args.paired_end and not align_paired_as_single)))
+	pm.run(cmd, out_sam_filter, follow=lambda:
+		pm.report_result("Filtered_reads", ngstk.count_unique_mapped_reads(out_sam_filter, args.paired_end and not align_paired_as_single)))
 
 
 
-#	mypiper.timestamp("### Set flag in skipped reads to 4 (unmapped): ")
+#	pm.timestamp("### Set flag in skipped reads to 4 (unmapped): ")
 #	joined_sam = out_sam_filter.replace(".filt." , ".filtFlag.")
 #	skipped_sam = out_sam_filter.replace(".filt." , ".skipped.")
 #	cmd = "samtools view -hS " + out_sam_filter + " > " + joined_sam + "\n"
 #	cmd += "awk -v skip=" + headerLines + " -v OFS=\"\\t\" '{if (NR>skip){$2=4;$3=\"*\";$4=0;$5=0;$6=\"*\";$7=\"*\";$8=0;$9=0; print}}' " + skipped_sam
 #	cmd += " >>" + joined_sam
 #
-#	mypiper.call_lock(cmd, joined_sam , shell=True)
+#	pm.call_lock(cmd, joined_sam , shell=True)
 #
 #	if not args.no_check:
 #		x = ngstk.count_reads(joined_sam, args.paired_end and not align_paired_as_single)
-#		mypiper.report_result("Joined_reads", x)
+#		pm.report_result("Joined_reads", x)
 #
-#	mypiper.timestamp("### Filtered: SAM to BAM conversion, sorting and depth calculation: ")
+#	pm.timestamp("### Filtered: SAM to BAM conversion, sorting and depth calculation: ")
 #	cmd = ngstk.sam_conversions(joined_sam)
-#	mypiper.call_lock(cmd, joined_sam.replace(".sam" , "_sorted.depth"),shell=True)
+#	pm.call_lock(cmd, joined_sam.replace(".sam" , "_sorted.depth"),shell=True)
 #
-#	mypiper.timestamp("### Skipped: SAM to BAM conversion and sorting: ")
+#	pm.timestamp("### Skipped: SAM to BAM conversion and sorting: ")
 #	cmd = ngstk.sam_conversions(skipped_sam,False)
-#	mypiper.call_lock(cmd, skipped_sam.replace(".sam" , "_sorted.bam"),shell=True)
+#	pm.call_lock(cmd, skipped_sam.replace(".sam" , "_sorted.bam"),shell=True)
 #
 #	if args.markDupl:
-#		mypiper.timestamp("### MarkDuplicates: ")
+#		pm.timestamp("### MarkDuplicates: ")
 #
 #		aligned_file = joined_sam.replace(".sam" , "_sorted.bam")
 #		out_file = joined_sam.replace(".sam" , "_dedup.bam")
 #		metrics_file = joined_sam.replace(".sam" , "_dedup.metrics")
 #		cmd = ngstk.markDuplicates(paths, aligned_file, out_file, metrics_file)
-#		mypiper.call_lock(cmd, out_file)
+#		pm.call_lock(cmd, out_file)
 #
 #		if not args.no_check:
 #			x = ngstk.count_mapped_reads(out_file)
-#			mypiper.report_result("Deduplicated_reads", x)
+#			pm.report_result("Deduplicated_reads", x)
 
-	mypiper.timestamp("### Filtered: SAM to BAM conversion, sorting and depth calculation: ")
+	pm.timestamp("### Filtered: SAM to BAM conversion, sorting and depth calculation: ")
 	cmd = ngstk.sam_conversions(out_sam_filter)
-	mypiper.run(cmd, re.sub(".sam$", "_sorted.depth", out_sam_filter),shell=True)
+	pm.run(cmd, re.sub(".sam$", "_sorted.depth", out_sam_filter),shell=True)
 
 	skipped_sam = out_sam_filter.replace(".filt." , ".skipped.")
-	mypiper.timestamp("### Skipped: SAM to BAM conversion and sorting: ")
+	pm.timestamp("### Skipped: SAM to BAM conversion and sorting: ")
 	cmd = ngstk.sam_conversions(skipped_sam,False)
-	mypiper.run(cmd, re.sub(".sam$" , "_sorted.bam", skipped_sam),shell=True)
+	pm.run(cmd, re.sub(".sam$" , "_sorted.bam", skipped_sam),shell=True)
 
-	mypiper.clean_add(skipped_sam, conditional=False)
-	mypiper.clean_add(re.sub(".sam$" , ".bam", skipped_sam), conditional=False)
-	mypiper.clean_add(out_sam_filter, conditional=False)
-	mypiper.clean_add(re.sub(".sam$" , ".bam", out_sam_filter), conditional=False)
+	pm.clean_add(skipped_sam, conditional=False)
+	pm.clean_add(re.sub(".sam$" , ".bam", skipped_sam), conditional=False)
+	pm.clean_add(out_sam_filter, conditional=False)
+	pm.clean_add(re.sub(".sam$" , ".bam", out_sam_filter), conditional=False)
 
 
 
 #create tracks
 ########################################################################################
-mypiper.timestamp("### bam2wig: ")
+pm.timestamp("### bam2wig: ")
 if args.filter:
 	trackFile = re.sub(".sam$", "_sorted.bam", out_sam_filter)
 	cmd = paths.bam2wig + " -i" + trackFile
 	cmd += " -s " + paths.chrom_sizes
 	cmd += " -o " + re.sub(".sam$" , "_sorted", out_sam_filter)
 	cmd += " -t " + str(args.wigsum)
-	mypiper.run(cmd, re.sub(".sam$" , "_sorted.wig",out_sam_filter),shell=False)
+	pm.run(cmd, re.sub(".sam$" , "_sorted.wig",out_sam_filter),shell=False)
 
-	mypiper.timestamp("### wigToBigWig: ")
+	pm.timestamp("### wigToBigWig: ")
 	cmd = paths.wigToBigWig + " " + re.sub(".sam$" , "_sorted.wig",out_sam_filter)
 	cmd += " " + paths.chrom_sizes
 	cmd += " " + re.sub(".sam$" , "_sorted.bw",out_sam_filter)
-	mypiper.run(cmd, re.sub(".sam$" , "_sorted.bw",out_sam_filter),shell=False)
+	pm.run(cmd, re.sub(".sam$" , "_sorted.bw",out_sam_filter),shell=False)
 
 else:
 	trackFile = re.sub(".bam$", "_sorted.bam",out_tophat)
@@ -327,27 +327,27 @@ else:
 	cmd += " -s " + paths.chrom_sizes
 	cmd += " -o " + re.sub(".bam$" , "_sorted",out_tophat)
 	cmd += " -t " + str(args.wigsum)
-	mypiper.run(cmd, re.sub(".bam$" , "_sorted.wig",out_tophat),shell=False)
+	pm.run(cmd, re.sub(".bam$" , "_sorted.wig",out_tophat),shell=False)
 
-	mypiper.timestamp("### wigToBigWig: ")
+	pm.timestamp("### wigToBigWig: ")
 	cmd = paths.wigToBigWig + " " + re.sub(".bam$" , "_sorted.wig",out_tophat)
 	cmd += " " + paths.chrom_sizes
 	cmd += " " + re.sub(".bam$" , "_sorted.bw",out_tophat)
-	mypiper.run(cmd, re.sub(".bam$" , "_sorted.bw", out_tophat),shell=False)
+	pm.run(cmd, re.sub(".bam$" , "_sorted.bw", out_tophat),shell=False)
 
 
-mypiper.timestamp("### read_distribution: ")
+pm.timestamp("### read_distribution: ")
 cmd = paths.read_distribution + " -i " + trackFile
 cmd	+= " -r " + paths.gene_model_bed
 cmd += " > " + re.sub("_sorted.bam$", "_read_distribution.txt",trackFile)
-mypiper.run(cmd, re.sub("_sorted.bam$", "_read_distribution.txt",trackFile),shell=True)
+pm.run(cmd, re.sub("_sorted.bam$", "_read_distribution.txt",trackFile),shell=True)
 
 
-mypiper.timestamp("### gene_coverage: ")
+pm.timestamp("### gene_coverage: ")
 cmd = paths.gene_coverage + " -i " + re.sub(".bam$" , ".bw",trackFile)
 cmd	+= " -r " + paths.gene_model_sub_bed
 cmd += " -o " + re.sub("_sorted.bam$", "",trackFile)
-mypiper.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell=False)
+pm.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell=False)
 
 
 # Cleanup
@@ -355,4 +355,4 @@ mypiper.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell
 
 
 # remove temporary marker file:
-mypiper.stop_pipeline()
+pm.stop_pipeline()
