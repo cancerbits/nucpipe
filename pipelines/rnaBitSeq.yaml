@@ -9,7 +9,7 @@ tools:
   python: python
   java: java
   Rscript: Rscript
-  samtools: samtools
+  samtools: /cm/shared/apps/samtools/1.2/bin/samtools
   picard: /cm/shared/apps/picard-tools/1.140/picard.jar
   trimmomatic: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32.jar
   trimmomatic_epignome: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar

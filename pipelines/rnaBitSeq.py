@@ -95,12 +95,12 @@ pm.timestamp("### Adapter trimming: ")
 cmd = tools.java + " -Xmx" + str(pm.mem) + " -jar " + tools.trimmomatic_epignome
 
 if not args.paired_end:
-	cmd += " SE -phred33 -threads " + str(pm.cores)
+	cmd += " SE -phred33 -threads " + str(pm.cores) + " "
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
 
 else:
-	cmd += " PE -phred33 -threads " + str(pm.cores)
+	cmd += " PE -phred33 -threads " + str(pm.cores) + " "
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R2.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
@@ -140,13 +140,13 @@ out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + ".aln.sam")
 
 if not args.paired_end:
 	cmd = tools.bowtie1
-	cmd += " -q -p 6 -a -m 100 --sam "
+	cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 	cmd += resources.bowtie_indexed_genome + " "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq"
 	cmd += " " + out_bowtie1
 else:
 	cmd = tools.bowtie1
-	cmd += " -q -p 6 -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "    # also checked --rf (1% aln) and --ff (0% aln) --fr(8% aln)
+	cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "    # also checked --rf (1% aln) and --ff (0% aln) --fr(8% aln)
 	cmd += resources.bowtie_indexed_genome
 	cmd += " -1 " + out_fastq_pre + "_R1_trimmed.fastq"
 	cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
