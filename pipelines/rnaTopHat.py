@@ -94,12 +94,12 @@ pm.timestamp("### Adapter trimming: ")
 cmd = tools.java + " -Xmx" + str(pm.mem) + " -jar " + tools.trimmomatic_epignome
 
 if not args.paired_end:
-	cmd += " SE -phred33 -threads " + str(pm.cores)
+	cmd += " SE -phred33 -threads " + str(pm.cores) + " "
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "
 
 else:
-	cmd += " PE -phred33 -threads " + str(pm.cores)
+	cmd += " PE -phred33 -threads " + str(pm.cores) + " "
 	cmd += out_fastq_pre + "_R1.fastq "
 	cmd += out_fastq_pre + "_R2.fastq "
 	cmd += out_fastq_pre + "_R1_trimmed.fastq "

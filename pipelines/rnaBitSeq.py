@@ -70,6 +70,7 @@ print("Sample name:\t" + args.sample_name)
 # Merge/Link sample input
 ################################################################################
 # This command should now handle all the merging.
+
 local_input_file = ngstk.create_local_input(param.pipeline_outfolder, args.input, args.sample_name)
 
 print("Local input file: " + local_input_file) 
@@ -252,7 +253,7 @@ if not (args.ERCC_mix == "False" ):
 
 	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
 	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
-	pm.run(cmd, unmappable_bam, shell=True)
+	pm.run(cmd, unmappable_bam + ".bam", shell=True)
 
 	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
 	pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
