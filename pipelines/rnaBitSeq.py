@@ -330,7 +330,7 @@ if not ( type(args.ERCC_mix) is bool and args.ERCC_mix is False ):
 
 	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
 	cmd = "samtools view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
-	mypiper.run(cmd, unmappable_bam, shell=True)
+	mypiper.run(cmd, unmappable_bam + ".bam", shell=True)
 
 
 	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
