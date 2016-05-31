@@ -28,6 +28,9 @@ parser.add_argument('-f', dest='filter', action='store_false', default=True)
 # Core-seq as optional parameter
 parser.add_argument('-cs', '--core-seq', default=False, dest='coreseq', action='store_true', help='CORE-seq Mode')
 
+# Quant-Seq as optional parameter
+parser.add_argument('-qs', '--quantseq', default=False, dest='quantseq', action='store_true', help='Quant-Seq Mode')
+
 args = parser.parse_args()
 
 if args.single_or_paired == "paired":
@@ -118,9 +121,9 @@ if args.coreseq:
 	cmd += " MINLEN:25"
 # otherwise just look for normal adapters:
 else:
-	cmd += " HEADCROP:6"
+	if args.quantseq: cmd += " HEADCROP:6"
 	cmd += " ILLUMINACLIP:" + resources.adapters + ":2:10:4:1:true"
-	cmd += " ILLUMINACLIP:" + "/data/groups/lab_bsf/resources/trimmomatic_adapters/PolyA-SE.fa" + ":2:30:5:1:true"
+	if args.quantseq: cmd += " ILLUMINACLIP:" + "/data/groups/lab_bsf/resources/trimmomatic_adapters/PolyA-SE.fa" + ":2:30:5:1:true"
 	cmd += " SLIDINGWINDOW:4:1"
 	cmd += " MAXINFO:16:0.40"
 	cmd += " MINLEN:21"
@@ -265,13 +268,13 @@ if not (args.ERCC_mix == "False" ):
 
 	if not args.paired_end:
 		cmd = tools.bowtie1
-		cmd += " -q -p 6 -a -m 100 --sam "
+		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 		cmd += resources.bowtie_indexed_ERCC + " "
 		cmd += unmappable_bam + "_R1.fastq"
 		cmd += " " + out_bowtie1
 	else:
 		cmd = tools.bowtie1
-		cmd += " -q -p 6 -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
+		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
 		cmd += resources.bowtie_indexed_ERCC
 		cmd += " -1 " + unmappable_bam + "_R1.fastq"
 		cmd += " -2 " + unmappable_bam + "_R2.fastq"

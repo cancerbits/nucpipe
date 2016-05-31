@@ -15,11 +15,7 @@ tools:
   trimmomatic_epignome: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar
   bowtie1: /cm/shared/apps/bowtie/1.1.1/bin/bowtie
   bowtie2: /cm/shared/apps/bowtie/2.2.4/bin/bowtie2
-  bed2bigBed: /data/groups/lab_bock/shared/resources/tools/bedToBigBed
-  bed2bigWig: /data/groups/lab_bock/shared/resources/tools/bedGraphToBigWig
-
 
 parameters:
   # parameters passed to bioinformatic tools, subclassed by tool
-
   trimmomatic:
