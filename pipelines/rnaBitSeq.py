@@ -32,7 +32,7 @@ parser.add_argument('-e', '--ercc',
 				type = str,
 				help = 'ERCC Assembly')
 parser.add_argument('-em', '--ercc-mix',
-				type = bool,
+				default = False,
 				dest = 'ERCC_mix',
 				help = 'ERCC mix. If False no ERCC analysis will be performed.')
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
@@ -111,8 +111,8 @@ pm = pypiper.PipelineManager(name="rnaBitSeq", outfolder=paths.pipeline_outfolde
 
 ngstk = pypiper.NGSTk(pm=pm)
 
-raw_folder = os.path.join(param.pipeline_outfolder, "raw/")
-fastq_folder = os.path.join(param.pipeline_outfolder, "fastq/")
+raw_folder = os.path.join(paths.pipeline_outfolder, "raw/")
+fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
 
 # Merge/Link sample input and Fastq conversion
 # These commands merge (if multiple) or link (if single) input files,
@@ -316,7 +316,7 @@ pm.run(cmd, out_bitSeq)
 
 # ERCC Spike-in alignment
 ########################################################################################
-if not ( type(args.ERCC_mix) is bool and args.ERCC_mix is False ):
+if not args.ERCC_mix is False:
 	pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
 	# Sanity checks:
