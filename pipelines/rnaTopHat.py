@@ -70,6 +70,8 @@ print("Sample name:\t" + args.sample_name)
 ################################################################################
 # This command should now handle all the merging.
 local_input_file = ngstk.create_local_input(param.pipeline_outfolder, args.input, args.sample_name)
+pm.report_result("Raw_reads", ngstk.count_reads(local_input_file,args.paired_end))
+
 
 print("Local input file: " + local_input_file) 
 
@@ -85,6 +87,8 @@ pm.timestamp("### Fastq conversion: ")
 cmd, fastq_folder, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_file, param.pipeline_outfolder, args.sample_name, args.paired_end)
 ngstk.make_sure_path_exists(fastq_folder)
 pm.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_file, unaligned_fastq, args.paired_end))
+pm.report_result("Fastq_reads", ngstk.count_reads(unaligned_fastq,args.paired_end))
+
 pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
 
 # Adapter trimming
@@ -163,7 +167,7 @@ pm.run(cmd, os.path.join(tophat_folder,"align_summary.txt"), shell=False)
 
 pm.timestamp("### renaming tophat aligned bam file ")
 cmd = "mv " + os.path.join(tophat_folder,"accepted_hits.bam") + " " + out_tophat
-pm.run(cmd, out_tophat, shell=False, follow=lambda:
+pm.run(cmd, re.sub(".bam$", "_sorted.bam", out_tophat), shell=False, follow=lambda:
 	pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_tophat,args.paired_end and not align_paired_as_single)))
 
 pm.timestamp("### BAM to SAM sorting and indexing: ")
