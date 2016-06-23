@@ -120,9 +120,7 @@ if args.coreseq:
 	cmd += " MINLEN:25"
 # otherwise just look for normal adapters:
 else:
-	cmd += " HEADCROP:6"
 	cmd += " ILLUMINACLIP:" + resources.adapters + ":2:10:4:1:true"
-	cmd += " ILLUMINACLIP:" + "/data/groups/lab_bsf/resources/trimmomatic_adapters/PolyA-SE.fa" + ":2:30:5:1:true"
 	cmd += " SLIDINGWINDOW:4:1"
 	cmd += " MAXINFO:16:0.40"
 	cmd += " MINLEN:21"
@@ -280,6 +278,5 @@ pm.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell=Fals
 # Cleanup
 ########################################################################################
 
-
-# remove temporary marker file:
 pm.stop_pipeline()
+
