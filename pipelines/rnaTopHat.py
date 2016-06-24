@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+	#!/usr/bin/env python
 """
 RNA TopHat pipeline
 documentation.
@@ -106,8 +106,8 @@ pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=paths.pipeline_outfolde
 
 ngstk = pypiper.NGSTk(pm=pm)
 
-raw_folder = os.path.join(param.pipeline_outfolder, "raw/")
-fastq_folder = os.path.join(param.pipeline_outfolder, "fastq/")
+raw_folder = os.path.join(paths.pipeline_outfolder, "raw/")
+fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
 
 # Merge/Link sample input and Fastq conversion
 # These commands merge (if multiple) or link (if single) input files,
@@ -155,9 +155,15 @@ else:
 	cmd += " ILLUMINACLIP:" + paths.adapter_file + ":2:10:4:1:true SLIDINGWINDOW:4:1 MAXINFO:16:0.40 MINLEN:21"
 
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
-pm.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
+trimmed_fastq_R2 = out_fastq_pre + "_R2_trimmed.fastq"
+#pm.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
+#pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
 
-pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
+pm.run(cmd, trimmed_fastq, 
+	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
+		fastqc_folder = os.path.join(paths.pipeline_outfolder, "fastqc/")))
+
+
 
 
 # RNA Tophat pipeline.
@@ -342,14 +348,15 @@ pm.timestamp("### read_distribution: ")
 cmd = paths.read_distribution + " -i " + trackFile
 cmd	+= " -r " + paths.gene_model_bed
 cmd += " > " + re.sub("_sorted.bam$", "_read_distribution.txt",trackFile)
-pm.run(cmd, re.sub("_sorted.bam$", "_read_distribution.txt",trackFile),shell=True)
+pm.run(cmd, re.sub("_sorted.bam$", "_read_distribution.txt",trackFile), shell = True,
+	nofail = True)
 
 
 pm.timestamp("### gene_coverage: ")
 cmd = paths.gene_coverage + " -i " + re.sub(".bam$" , ".bw",trackFile)
 cmd	+= " -r " + paths.gene_model_sub_bed
 cmd += " -o " + re.sub("_sorted.bam$", "",trackFile)
-pm.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell=False)
+pm.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile), shell = False)
 
 
 # Cleanup

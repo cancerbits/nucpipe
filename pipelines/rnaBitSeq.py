@@ -32,7 +32,7 @@ parser.add_argument('-e', '--ercc',
 				type = str,
 				help = 'ERCC Assembly')
 parser.add_argument('-em', '--ercc-mix',
-				default = False,
+				default = "False",
 				dest = 'ERCC_mix',
 				help = 'ERCC mix. If False no ERCC analysis will be performed.')
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
@@ -160,13 +160,14 @@ else:
 	cmd += " ILLUMINACLIP:" + paths.adapter_file + ":2:10:4:1:true SLIDINGWINDOW:4:1 MAXINFO:16:0.40 MINLEN:21"
 
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
+trimmed_fastq_R2 = out_fastq_pre + "_R2_trimmed.fastq"
 
-pm.run(cmd, out_fastq_pre + "_R1_trimmed.fastq",
-	follow = lambda: pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end)))
+#pm.run(cmd, out_fastq_pre + "_R1_trimmed.fastq",
+#	follow = lambda: pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end)))
 
-
-
-
+pm.run(cmd, trimmed_fastq, 
+	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
+		fastqc_folder = os.path.join(paths.pipeline_outfolder, "fastqc/")))
 
 
 # RNA BitSeq pipeline.
@@ -316,7 +317,8 @@ pm.run(cmd, out_bitSeq)
 
 # ERCC Spike-in alignment
 ########################################################################################
-if not args.ERCC_mix is False:
+
+if not args.ERCC_mix == "False":
 	pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
 	# Sanity checks:
