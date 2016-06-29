@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 RNA TopHat pipeline
 """
@@ -55,41 +54,33 @@ pm.config.resources.gene_model_sub_bed = os.path.join(pm.config.resources.genome
 # Output
 pm.config.parameters.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name)
 
-# Create a ngstk object
+# Initialize
+pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=paths.pipeline_outfolder, args=args)
+
 ngstk = pypiper.NGSTk(pm=pm)
 
-print "\nPipeline configuration:"
-print(pm.config)
-tools = pm.config.tools  # Convenience alias
+tools = pm.config.tools  # Convenience aliases
 param = pm.config.parameters
 resources = pm.config.resources
 
-print("Sample name:\t" + args.sample_name)
+raw_folder = os.path.join(paths.pipeline_outfolder, "raw/")
+fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
 
-# Merge/Link sample input
+# Merge/Link sample input and Fastq conversion
+# These commands merge (if multiple) or link (if single) input files,
+# then convert (if necessary, for bam, fastq, or gz format) files to fastq.
 ################################################################################
-# This command should now handle all the merging.
-local_input_file = ngstk.create_local_input(param.pipeline_outfolder, args.input, args.sample_name)
-pm.report_result("Raw_reads", ngstk.count_reads(local_input_file,args.paired_end))
+pm.timestamp("### Merge/link and fastq conversion: ")
 
-
-print("Local input file: " + local_input_file) 
-
-# Make sure file exists:
-if not os.path.isfile(local_input_file):
-	print local_input_file + " is not a file"
-
-# Fastq conversion
-################################################################################
-pm.timestamp("### Fastq conversion: ")
-# New fastq conversion (can handle .bam or .fastq.gz files)
-
-cmd, fastq_folder, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_file, param.pipeline_outfolder, args.sample_name, args.paired_end)
-ngstk.make_sure_path_exists(fastq_folder)
-pm.run(cmd, unaligned_fastq, follow=ngstk.check_fastq(local_input_file, unaligned_fastq, args.paired_end))
-pm.report_result("Fastq_reads", ngstk.count_reads(unaligned_fastq,args.paired_end))
-
+local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
+cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, args.paired_end, fastq_folder)
+pm.run(cmd, unaligned_fastq, 
+	follow=ngstk.check_fastq(local_input_files, unaligned_fastq, args.paired_end))
 pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
+
+pm.report_result("File_mb", ngstk.get_file_size(local_input_files))
+pm.report_result("Read_type", args.single_or_paired)
+pm.report_result("Genome", args.genome_assembly)
 
 # Adapter trimming
 ################################################################################
@@ -126,9 +117,13 @@ else:
 	cmd += " MINLEN:21"
 
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
-pm.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
+trimmed_fastq_R2 = out_fastq_pre + "_R2_trimmed.fastq"
+#pm.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
+#pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
 
-pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
+pm.run(cmd, trimmed_fastq, 
+	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
+		fastqc_folder = os.path.join(paths.pipeline_outfolder, "fastqc/")))
 
 
 # RNA Tophat pipeline.
@@ -188,7 +183,6 @@ if not args.filter and args.markDupl:
 	cmd = ngstk.markDuplicates(aligned_file, out_file, metrics_file)
 	pm.run(cmd, out_file, follow= lambda:
 		pm.report_result("Deduplicated_reads", ngstk.count_unique_mapped_reads(out_file, args.paired_end and not align_paired_as_single)))
-
 
 #read filtering
 ########################################################################################
@@ -266,7 +260,7 @@ pm.timestamp("### read_distribution: ")
 cmd = tools.read_distribution + " -i " + trackFile
 cmd += " -r " + resources.gene_model_bed
 cmd += " > " + re.sub("_sorted.bam$", "_read_distribution.txt",trackFile)
-pm.run(cmd, re.sub("_sorted.bam$", "_read_distribution.txt",trackFile),shell=True)
+pm.run(cmd, re.sub("_sorted.bam$", "_read_distribution.txt",trackFile),shell=True, nofail=True)
 
 pm.timestamp("### gene_coverage: ")
 cmd = tools.gene_coverage + " -i " + re.sub(".bam$" , ".bw",trackFile)
@@ -279,4 +273,3 @@ pm.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell=Fals
 ########################################################################################
 
 pm.stop_pipeline()
-
