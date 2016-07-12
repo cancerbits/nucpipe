@@ -36,7 +36,8 @@ if not args.input:
 	raise SystemExit
 
 # Initialize
-pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=os.path.join(args.output_parent, args.sample_name), args=args)
+outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
+pm = pypiper.PipelineManager(name = "rnaTopHat", outfolder = outfolder, args = args)
 
 # Tools
 pm.config.tools.scripts_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tools")
@@ -55,7 +56,7 @@ pm.config.resources.gene_model_sub_bed = os.path.join(pm.config.resources.genome
 pm.config.parameters.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name)
 
 # Initialize
-pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=paths.pipeline_outfolder, args=args)
+pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=param.pipeline_outfolder, args=args)
 
 ngstk = pypiper.NGSTk(pm=pm)
 
@@ -63,8 +64,8 @@ tools = pm.config.tools  # Convenience aliases
 param = pm.config.parameters
 resources = pm.config.resources
 
-raw_folder = os.path.join(paths.pipeline_outfolder, "raw/")
-fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
+raw_folder = os.path.join(param.pipeline_outfolder, "raw/")
+fastq_folder = os.path.join(param.pipeline_outfolder, "fastq/")
 
 # Merge/Link sample input and Fastq conversion
 # These commands merge (if multiple) or link (if single) input files,
@@ -123,7 +124,7 @@ trimmed_fastq_R2 = out_fastq_pre + "_R2_trimmed.fastq"
 
 pm.run(cmd, trimmed_fastq, 
 	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
-		fastqc_folder = os.path.join(paths.pipeline_outfolder, "fastqc/")))
+		fastqc_folder = os.path.join(param.pipeline_outfolder, "fastqc/")))
 
 
 # RNA Tophat pipeline.
