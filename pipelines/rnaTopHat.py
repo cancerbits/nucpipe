@@ -53,7 +53,7 @@ pm.config.resources.gene_model_bed = os.path.join(pm.config.resources.genomes, a
 pm.config.resources.gene_model_sub_bed = os.path.join(pm.config.resources.genomes, args.genome_assembly , "ucsc_" + args.genome_assembly + "_ensembl_genes_500rand.bed")
 
 # Output
-pm.config.parameters.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name)
+pm.config.parameters.pipeline_outfolder = outfolder
 
 # Initialize
 pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=param.pipeline_outfolder, args=args)
