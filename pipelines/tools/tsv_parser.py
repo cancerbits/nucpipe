@@ -34,13 +34,21 @@ parser.add_argument('-r', '--rowmatch', dest='rowmatch',
 
 parser.add_argument('-k', '--keys', dest='include_keys',
  	default=False, action="store_true",
-	help="Print keys?",
+	help="Print out keys? By default, No.",
+	required=False)
+
+parser.add_argument('-H', '--no-header', dest='header',
+ 	default=True, action="store_false",
+	help="Turns off header row parsing (column names).",
 	required=False)
 
 args = parser.parse_args()
 
 input_open = open(args.input_file, 'rb')
-f = csv.DictReader(input_open, delimiter="\t")
+if args.header:
+	f = csv.DictReader(input_open, delimiter="\t")
+else:
+	f = csv.reader(input_open, delimiter="\t")
 
 fail = False
 
@@ -53,13 +61,21 @@ for row in f:  # iterates the rows of the file in order
 			# print(rs)
 			# rowmatch_list[0]  # key
 			# rowmatch_list[1]  # value
+			if not args.header:
+				rowmatch_list[0] = int(rowmatch_list[0])
 			if not row[rowmatch_list[0]] == rowmatch_list[1]:
 				fail = True
 	if fail:
+		# The first column value did not match any of the keyed rows;
+		# So we don't print out this row.
 		continue
 
 	for key in args.column:
 		if args.include_keys:
 			print("\t".join([key, row[key]]))
 		else:
-			print(row[key])
+			if args.header:
+				print(row[key])
+			else:
+				# maybe the key was an integer?
+				print(row[int(key)])
