@@ -36,7 +36,7 @@ def main():
 		description="Kallisto pipeline."
 	)
 	parser = arg_parser(parser)
-	parser = pypiper.add_pypiper_args(parser, all_args=True)
+	parser = pypiper.add_pypiper_args(parser, args=["True"])
 	args = parser.parse_args()
 
 	# Read in yaml configs

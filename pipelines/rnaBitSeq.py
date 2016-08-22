@@ -17,7 +17,7 @@ import pypiper
 # #######################################################################################
 parser = ArgumentParser(description='Pypiper arguments.')
 
-parser = pypiper.add_pypiper_args(parser, all_args=True)
+parser = pypiper.add_pypiper_args(parser, groups=["all"])
 
 # Add any pipeline-specific arguments
 
@@ -276,14 +276,14 @@ if not (args.ERCC_mix == "False" ):
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 		cmd += resources.bowtie_indexed_ERCC + " "
 		cmd += unmappable_bam + "_R1.fastq"
-		cmd += " -S " + out_bowtie2
+		cmd += " -S " + out_bowtie1
 	else:
 		cmd = tools.bowtie1
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
 		cmd += resources.bowtie_indexed_ERCC
 		cmd += " -1 " + unmappable_bam + "_R1.fastq"
 		cmd += " -2 " + unmappable_bam + "_R2.fastq"
-		cmd += " -S " + out_bowtie2
+		cmd += " -S " + out_bowtie1
 
 
 #	if not args.paired_end:
