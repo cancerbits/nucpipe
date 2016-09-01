@@ -14,7 +14,7 @@ import pypiper
 # Argument Parsing
 # #######################################################################################
 parser = ArgumentParser(description='Pypiper arguments.')
-parser = pypiper.add_pypiper_args(parser, all_args=True)
+parser = pypiper.add_pypiper_args(parser, groups=["all"])
 
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
 parser.add_argument('-d', dest='markDupl', action='store_true', default=False)
@@ -56,7 +56,7 @@ pm.config.resources.gene_model_sub_bed = os.path.join(pm.config.resources.genome
 pm.config.parameters.pipeline_outfolder = outfolder
 
 # Initialize
-pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=param.pipeline_outfolder, args=args)
+# pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=param.pipeline_outfolder, args=args)
 
 ngstk = pypiper.NGSTk(pm=pm)
 
@@ -160,7 +160,7 @@ else:
 pm.run(cmd, os.path.join(tophat_folder,"align_summary.txt"), shell=False)
 
 pm.timestamp("### renaming tophat aligned bam file ")
-cmd = "mv " + os.path.join(tophat_folder,"accepted_hits.bam") + " " + out_tophat
+# cmd = "mv " + os.path.join(tophat_folder,"accepted_hits.bam") + " " + out_tophat
 pm.run(cmd, re.sub(".bam$", "_sorted.bam", out_tophat), shell=False, follow=lambda:
 	pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_tophat,args.paired_end and not align_paired_as_single)))
 
