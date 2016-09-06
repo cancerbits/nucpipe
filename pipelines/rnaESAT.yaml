@@ -3,13 +3,14 @@ resources:
   resources: /data/groups/lab_bock/shared/resources
   genomes: /data/groups/lab_bock/shared/resources/genomes/
   adapters: /data/groups/lab_bock/shared/resources/adapters/epignome_adapters_2_add.fa
+  polyA: /data/groups/lab_bsf/resources/trimmomatic_adapters/PolyA-SE.fa
 
 tools:
   # absolute paths to required tools
   python: python
   java: java
   Rscript: Rscript
-  samtools: samtools
+  samtools: /cm/shared/apps/samtools/1.3.1/bin/samtools
   picard: /cm/shared/apps/picard-tools/1.140/picard.jar
   trimmomatic: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32.jar
   trimmomatic_epignome: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar
@@ -26,11 +27,11 @@ parameters:
   # parameters passed to bioinformatic tools, subclassed by tool
   tophat:
     b2L: 15
-    #librarytype: fr-unstranded
     librarytype: fr-firststrand
     mateinnerdist: 150
     maxmultihits: 100
   ESAT:
+    refGen: /data/groups/lab_bsf/resources/ESATrefGen/
     task: score3p
     wLen: 100
     wOlap: 50

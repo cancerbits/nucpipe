@@ -98,15 +98,13 @@ else:
 
 cmd += " HEADCROP:6"
 cmd += " ILLUMINACLIP:" + resources.adapters + ":2:10:4:1:true"
-cmd += " ILLUMINACLIP:" + "/data/groups/lab_bsf/resources/trimmomatic_adapters/PolyA-SE.fa" + ":2:30:5:1:true"
+cmd += " ILLUMINACLIP:" + resources.polyA + ":2:30:5:1:true"
 cmd += " SLIDINGWINDOW:4:1"
 cmd += " MAXINFO:16:0.40"
 cmd += " MINLEN:21"
 
 trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
 trimmed_fastq_R2 = out_fastq_pre + "_R2_trimmed.fastq"
-#pm.run(cmd, out_fastq_pre + "_R1_trimmed.fastq")
-#pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end))
 
 pm.run(cmd, trimmed_fastq, 
 	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
@@ -146,13 +144,28 @@ else:
 pm.run(cmd, os.path.join(tophat_folder,"align_summary.txt"), shell=False)
 
 pm.timestamp("### renaming tophat aligned bam file ")
+
 cmd = "mv " + os.path.join(tophat_folder,"accepted_hits.bam") + " " + out_tophat
-pm.run(cmd, re.sub(".bam$", "_sorted.bam", out_tophat), shell=False, follow=lambda:
-	pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_tophat,args.paired_end and not align_paired_as_single)))
+
+def check_tophat():
+	ar = ngstk.count_unique_mapped_reads(out_tophat,args.paired_end and not align_paired_as_single)
+	pm.report_result("Aligned_reads", ar)
+	rr = float(pm.get_stat("Raw_reads"))
+	tr = float(pm.get_stat("Trimmed_reads"))
+	pm.report_result("Alignment_rate", round(float(ar) * 100 / float(tr), 2))
+	pm.report_result("Total_efficiency", round(float(ar) * 100 / float(rr), 2))
+	mr = ngstk.count_multimapping_reads(out_tophat, args.paired_end)
+	pm.report_result("Multimap_reads", mr)
+	pm.report_result("Multimap_rate", round(float(mr) * 100 / float(tr), 2))
+
+pm.run(cmd, re.sub(".bam$", "_sorted.bam", out_tophat), shell=False, follow=check_tophat)
 
 pm.timestamp("### BAM to SAM sorting and indexing: ")
 
-cmd = ngstk.bam_conversions(out_tophat,True)
+cmd = tools.samtools + " view -h " + out_tophat + " > " + out_tophat.replace(".bam", ".sam") + "\n"
+cmd += tools.samtools + " sort --threads " + str(pm.cores) + " " + out_tophat + " -o " + out_tophat.replace(".bam", "_sorted.bam") + "\n"
+cmd += tools.samtools + " index " + out_tophat.replace(".bam", "_sorted.bam") + "\n"
+cmd += tools.samtools + " depth " + out_tophat.replace(".bam", "_sorted.bam") + " > " + out_tophat.replace(".bam", "_sorted.depth") + "\n"
 pm.run(cmd, re.sub(".bam$", "_sorted.depth", out_tophat),shell=True)
 
 pm.clean_add(out_tophat, conditional=False)
@@ -205,24 +218,23 @@ pm.timestamp("### End Sequence Analysis Toolkit (ESAT): ")
 
 ESAT_folder = os.path.join(param.pipeline_outfolder,"ESAT_" + args.genome_assembly)
 pm.make_sure_path_exists(ESAT_folder)
-out_ESAT = os.path.join(ESAT_folder,args.sample_name + ".gene.txt")
+out_ESAT_gene = os.path.join(ESAT_folder,args.sample_name + ".gene.txt")
+out_ESAT_window = os.path.join(ESAT_folder,args.sample_name + ".window.txt")
 
 cmd = tools.java + " -Xmx" + str(pm.mem) + " -jar " + tools.ESAT
-
 cmd += " -task " + str(param.ESAT.task)
 cmd += " -in " + out_tophat
-cmd += " -geneMapping " + "/scratch/lab_bsf/projects/BSA_0000_QUANTseq_quantseq/ESAT/" + args.genome_assembly + "_refGene.tsv"
+cmd += " -geneMapping " + param.ESAT.refGen + args.genome_assembly + "_refGene.tsv"
 cmd += " -out " + args.sample_name
 cmd += " -wLen " + str(param.ESAT.wLen)
 cmd += " -wOlap " + str(param.ESAT.wOlap)
 cmd += " -wExt " + str(param.ESAT.wExt)
 cmd += " -sigTest " + str(param.ESAT.sigTest)
-#cmd += " -unstranded"
 cmd += " -quality " + str(param.ESAT.quality)
 cmd += " -multimap " + str(param.ESAT.multimap)
 
 os.chdir(ESAT_folder)
-pm.run(cmd, out_ESAT, shell=False)
+pm.run(cmd, out_ESAT_gene, shell=False)
 
 
 # Cleanup
