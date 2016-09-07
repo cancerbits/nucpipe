@@ -17,7 +17,7 @@ tools:
   picard: /cm/shared/apps/picard-tools/1.140/picard.jar
   trimmomatic: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32.jar
   trimmomatic_epignome: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar
-  kallisto: /scratch/lab_bsf/src/kallisto/bin/kallisto
+  kallisto: /scratch/lab_bsf/src/kallisto/build/src/kallisto
 
 # the parameters section is intended for all parameters passed to bioinformatic tools
 parameters:

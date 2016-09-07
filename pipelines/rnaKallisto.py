@@ -36,7 +36,7 @@ def main():
 		description="Kallisto pipeline."
 	)
 	parser = arg_parser(parser)
-	parser = pypiper.add_pypiper_args(parser, all_args=True)
+	parser = pypiper.add_pypiper_args(parser, args=["True"])
 	args = parser.parse_args()
 
 	# Read in yaml configs
@@ -92,11 +92,14 @@ def process(sample, pipeline_config, args):
 	param = pm.config.parameters
 	resources = pm.config.resources
 
+	raw_folder = os.path.join(sample.paths.sample_root, "raw")
+	fastq_folder = os.path.join(sample.paths.sample_root, "fastq")
+
 	sample.paired = False
 	if args.single_or_paired == "paired": sample.paired = True
 
 	# Create a ngstk object
-	myngstk = pypiper.NGSTk(pm=pm)
+	ngstk = pypiper.NGSTk(pm=pm)
 
 	# Merge Bam files if more than one technical replicate
 	if len(sample.data_path.split(" ")) > 1:
@@ -111,19 +114,24 @@ def process(sample, pipeline_config, args):
 	# Convert bam to fastq
 	pm.timestamp("Converting to Fastq format")
 
-	param.pipeline_outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
-	cmd, fastq_folder, out_fastq_pre, unaligned_fastq = myngstk.input_to_fastq(sample.data_path, param.pipeline_outfolder, args.sample_name, sample.paired)
-	myngstk.make_sure_path_exists(fastq_folder)
-	pm.run(cmd, unaligned_fastq, follow=myngstk.check_fastq(sample.data_path, unaligned_fastq, sample.paired))
+	local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
+	cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, sample.paired, fastq_folder)
+	pm.run(cmd, unaligned_fastq, 
+		follow=ngstk.check_fastq(local_input_files, unaligned_fastq, sample.paired))
+	pm.clean_add(out_fastq_pre + "*.fastq", conditional=True)
+
+	pm.report_result("File_mb", ngstk.get_file_size(local_input_files))
+	pm.report_result("Read_type", args.single_or_paired)
+	pm.report_result("Genome", args.genome_assembly)
 
 	sample.fastq = out_fastq_pre + "_R1.fastq "
-	sample.trimmed = out_fastq_pre + "_R1_trimmed.fq "
+	sample.trimmed = out_fastq_pre + "_R1_trimmed.fastq "
 	sample.fastq1 = out_fastq_pre + "_R1.fastq " if sample.paired else None
 	sample.fastq2 = out_fastq_pre + "_R2.fastq " if sample.paired else None
-	sample.trimmed1 = out_fastq_pre + "_R1_trimmed.fq " if sample.paired else None
-	sample.trimmed1Unpaired = out_fastq_pre + "_R1_unpaired.fq " if sample.paired else None
-	sample.trimmed2 = out_fastq_pre + "_R2_trimmed.fq " if sample.paired else None
-	sample.trimmed2Unpaired + "_R2_unpaired.fq " if sample.paired else None
+	sample.trimmed1 = out_fastq_pre + "_R1_trimmed.fastq " if sample.paired else None
+	sample.trimmed1Unpaired = out_fastq_pre + "_R1_unpaired.fastq " if sample.paired else None
+	sample.trimmed2 = out_fastq_pre + "_R2_trimmed.fastq " if sample.paired else None
+	sample.trimmed2Unpaired + "_R2_unpaired.fastq " if sample.paired else None
 
 	#if not sample.paired:
 	#	pm.clean_add(sample.fastq, conditional=True)
@@ -197,6 +205,8 @@ def process(sample, pipeline_config, args):
 	bval = 0 # Number of bootstrap samples (default: 0)
 	size = 50 # Estimated average fragment length
 	sdev = 20 # Estimated standard deviation of fragment length
+	sample.paths.quant = os.path.join(sample.paths.sample_root, "kallisto")
+	sample.kallistoQuant = os.path.join(sample.paths.quant,"abundance.h5")
 	cmd1 = tools.kallisto + " quant -b {0} -l {1} -s {2} -i {3} -o {4} -t {5}".format(bval, size, sdev, transcriptomeIndex, sample.paths.quant, args.cores)
 	if not sample.paired:
 		cmd1 += " --single {0}".format(inputFastq)

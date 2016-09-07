@@ -17,7 +17,7 @@ import pypiper
 # #######################################################################################
 parser = ArgumentParser(description='Pypiper arguments.')
 
-parser = pypiper.add_pypiper_args(parser, all_args=True)
+parser = pypiper.add_pypiper_args(parser, groups=["all"])
 
 # Add any pipeline-specific arguments
 
@@ -50,7 +50,8 @@ if not args.input:
 	raise SystemExit
 
 # Initialize
-pm = pypiper.PipelineManager(name="rnaBitSeq", outfolder=os.path.join(args.output_parent, args.sample_name), args=args)
+outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
+pm = pypiper.PipelineManager(name = "rnaBitSeq", outfolder = outfolder, args = args)
 
 # Tools
 pm.config.tools.scripts_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tools")
@@ -64,15 +65,16 @@ pm.config.resources.bowtie_indexed_genome = os.path.join(pm.config.resources.gen
 pm.config.resources.bowtie_indexed_ERCC = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, "indexed_bowtie1", args.ERCC_assembly)
 
 # Output
-pm.config.parameters.pipeline_outfolder = os.path.join(args.output_parent, args.sample_name)
-
-# Initialize
-pm = pypiper.PipelineManager(name="rnaBitSeq", outfolder=paths.pipeline_outfolder, args=args)
+pm.config.parameters.pipeline_outfolder = outfolder
 
 ngstk = pypiper.NGSTk(pm=pm)
 
-raw_folder = os.path.join(paths.pipeline_outfolder, "raw/")
-fastq_folder = os.path.join(paths.pipeline_outfolder, "fastq/")
+tools = pm.config.tools  # Convenience alias
+param = pm.config.parameters
+resources = pm.config.resources
+
+raw_folder = os.path.join(param.pipeline_outfolder, "raw/")
+fastq_folder = os.path.join(param.pipeline_outfolder, "fastq/")
 
 # Merge/Link sample input and Fastq conversion
 # These commands merge (if multiple) or link (if single) input files,
@@ -134,14 +136,14 @@ trimmed_fastq_R2 = out_fastq_pre + "_R2_trimmed.fastq"
 
 pm.run(cmd, trimmed_fastq, 
 	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
-		fastqc_folder = os.path.join(paths.pipeline_outfolder, "fastqc/")))
+		fastqc_folder = os.path.join(param.pipeline_outfolder, "fastqc/")))
 
 
 # RNA BitSeq pipeline.
 ########################################################################################
 pm.timestamp("### Bowtie1 alignment: ")
 
-bowtie1_folder = os.path.join(paths.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
+bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
 pm.make_sure_path_exists(bowtie1_folder)
 out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + ".aln.sam")
 
@@ -274,26 +276,26 @@ if not (args.ERCC_mix == "False" ):
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 		cmd += resources.bowtie_indexed_ERCC + " "
 		cmd += unmappable_bam + "_R1.fastq"
-		cmd += " -S " + out_bowtie2
+		cmd += " -S " + out_bowtie1
 	else:
 		cmd = tools.bowtie1
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
 		cmd += resources.bowtie_indexed_ERCC
 		cmd += " -1 " + unmappable_bam + "_R1.fastq"
 		cmd += " -2 " + unmappable_bam + "_R2.fastq"
-		cmd += " -S " + out_bowtie2
+		cmd += " -S " + out_bowtie1
 
 
 #	if not args.paired_end:
-#		cmd = paths.bowtie1
+#		cmd = param.bowtie1
 #		cmd += " -q -p 6 -a -m 100 --sam "
-#		cmd += paths.bowtie_indexed_ERCC + " "
+#		cmd += param.bowtie_indexed_ERCC + " "
 #		cmd += unmappable_bam + "_R1.fastq"
 #		cmd += " " + out_bowtie1
 #	else:
-#		cmd = paths.bowtie1
+#		cmd = param.bowtie1
 #		cmd += " -q -p 6 -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
-#		cmd += paths.bowtie_indexed_ERCC
+#		cmd += param.bowtie_indexed_ERCC
 #		cmd += " -1 " + unmappable_bam + "_R1.fastq"
 #		cmd += " -2 " + unmappable_bam + "_R2.fastq"
 #		cmd += " " + out_bowtie1
