@@ -38,4 +38,4 @@ parameters:
     wExt: 1000
     sigTest: 0.05
     quality: 0
-    multimap: normal
+    multimap: ignore
