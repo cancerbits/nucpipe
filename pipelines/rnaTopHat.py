@@ -160,7 +160,7 @@ else:
 pm.run(cmd, os.path.join(tophat_folder,"align_summary.txt"), shell=False)
 
 pm.timestamp("### renaming tophat aligned bam file ")
-# cmd = "mv " + os.path.join(tophat_folder,"accepted_hits.bam") + " " + out_tophat
+cmd = "mv " + os.path.join(tophat_folder,"accepted_hits.bam") + " " + out_tophat
 pm.run(cmd, re.sub(".bam$", "_sorted.bam", out_tophat), shell=False, follow=lambda:
 	pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_tophat,args.paired_end and not align_paired_as_single)))
 
