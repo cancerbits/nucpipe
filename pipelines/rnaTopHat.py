@@ -14,7 +14,7 @@ import pypiper
 # Argument Parsing
 # #######################################################################################
 parser = ArgumentParser(description='Pypiper arguments.')
-parser = pypiper.add_pypiper_args(parser, all_args=True)
+parser = pypiper.add_pypiper_args(parser, groups=["all"])
 
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
 parser.add_argument('-d', dest='markDupl', action='store_true', default=False)
@@ -56,7 +56,7 @@ pm.config.resources.gene_model_sub_bed = os.path.join(pm.config.resources.genome
 pm.config.parameters.pipeline_outfolder = outfolder
 
 # Initialize
-pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=param.pipeline_outfolder, args=args)
+# pm = pypiper.PipelineManager(name="rnaTopHat", outfolder=param.pipeline_outfolder, args=args)
 
 ngstk = pypiper.NGSTk(pm=pm)
 
