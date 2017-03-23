@@ -35,7 +35,7 @@ parameters:
     task: score3p
     wLen: 100
     wOlap: 50
-    wExt: 1000
+    wExt: 200
     sigTest: 0.05
     quality: 0
     multimap: ignore
