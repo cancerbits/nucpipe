@@ -201,15 +201,15 @@ pm.run(cmd, re.sub(".bam$" , "_sorted.bw", out_tophat),shell=False)
 
 pm.timestamp("### read_distribution: ")
 cmd = tools.read_distribution + " -i " + trackFile
-cmd += " -r " + resources.gene_model_bed
+cmd += " -r " + param.ESAT.refGen + args.genome_assembly + "_refGene.bed"
 cmd += " > " + re.sub("_sorted.bam$", "_read_distribution.txt",trackFile)
 pm.run(cmd, re.sub("_sorted.bam$", "_read_distribution.txt",trackFile),shell=True, nofail=True)
 
-pm.timestamp("### gene_coverage: ")
-cmd = tools.gene_coverage + " -i " + re.sub(".bam$" , ".bw",trackFile)
-cmd += " -r " + resources.gene_model_sub_bed
-cmd += " -o " + re.sub("_sorted.bam$", "",trackFile)
-pm.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell=False)
+#pm.timestamp("### gene_coverage: ")
+#cmd = tools.gene_coverage + " -i " + re.sub(".bam$" , ".bw",trackFile)
+#cmd += " -r " + param.ESAT.refGen + args.genome_assembly + "_refGene.bed"
+#cmd += " -o " + re.sub("_sorted.bam$", "",trackFile)
+#pm.run(cmd, re.sub("_sorted.bam$", ".geneBodyCoverage.png",trackFile),shell=False)
 
 
 # ESAT pipeline
