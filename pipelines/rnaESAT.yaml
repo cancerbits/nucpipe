@@ -13,7 +13,7 @@ tools:
   samtools: /cm/shared/apps/samtools/1.3.1/bin/samtools
   picard: /cm/shared/apps/picard-tools/1.140/picard.jar
   trimmomatic: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32.jar
-  trimmomatic_epignome: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32-epignome.jar
+  trimmomatic_epignome: ${TRIMMOMATIC_EPIGNOME}
   bowtie1: /cm/shared/apps/bowtie/1.1.1/bin/bowtie
   bowtie2: /cm/shared/apps/bowtie/2.2.4/bin/bowtie2
   wigToBigWig: /data/groups/lab_bock/shared/resources/tools/wigToBigWig
