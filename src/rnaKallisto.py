@@ -15,8 +15,8 @@ try:
 	from pipelines import toolkit as tk
 except:
 	sys.path.append(os.path.join(os.path.dirname(__file__), "pipelines"))
-	from models import AttributeDict
-	import toolkit as tk
+	from looper.models import AttributeDict
+	from pypiper import ngstk as tk
 
 
 __author__ = "Andre Rendeiro"
@@ -36,7 +36,7 @@ def main():
 		description="Kallisto pipeline."
 	)
 	parser = arg_parser(parser)
-	parser = pypiper.add_pypiper_args(parser, args=["True"])
+	parser = pypiper.add_pypiper_args(parser, all_args = True)
 	args = parser.parse_args()
 
 	# Read in yaml configs
@@ -76,12 +76,12 @@ def process(sample, pipeline_config, args):
 
 	print("Start processing sample %s." % sample.sample_name)
 
-	for path in ["sample_root"] + sample.paths.__dict__.keys():
-		if not os.path.exists(sample.paths[path]):
-			try:
-				os.mkdir(sample.paths[path])
-			except OSError("Cannot create '%s' path: %s" % (path, sample.paths[path])):
-				raise
+	# for path in ["sample_root"] + sample.paths.__dict__.keys():
+	# 	if not os.path.exists(sample.paths[path]):
+	# 		try:
+	# 			os.mkdir(sample.paths[path])
+	# 		except OSError("Cannot create '%s' path: %s" % (path, sample.paths[path])):
+	# 			raise
 
 	# Start Pypiper object
 	pm = pypiper.PipelineManager("rnaKallisto", sample.paths.sample_root, args=args)
@@ -124,14 +124,14 @@ def process(sample, pipeline_config, args):
 	pm.report_result("Read_type", args.single_or_paired)
 	pm.report_result("Genome", args.genome_assembly)
 
-	sample.fastq = out_fastq_pre + "_R1.fastq "
-	sample.trimmed = out_fastq_pre + "_R1_trimmed.fastq "
-	sample.fastq1 = out_fastq_pre + "_R1.fastq " if sample.paired else None
-	sample.fastq2 = out_fastq_pre + "_R2.fastq " if sample.paired else None
-	sample.trimmed1 = out_fastq_pre + "_R1_trimmed.fastq " if sample.paired else None
-	sample.trimmed1Unpaired = out_fastq_pre + "_R1_unpaired.fastq " if sample.paired else None
-	sample.trimmed2 = out_fastq_pre + "_R2_trimmed.fastq " if sample.paired else None
-	sample.trimmed2Unpaired + "_R2_unpaired.fastq " if sample.paired else None
+	sample.fastq = out_fastq_pre + "_R1.fastq"
+	sample.trimmed = out_fastq_pre + "_R1_trimmed.fastq"
+	sample.fastq1 = out_fastq_pre + "_R1.fastq" if sample.paired else None
+	sample.fastq2 = out_fastq_pre + "_R2.fastq" if sample.paired else None
+	sample.trimmed1 = out_fastq_pre + "_R1_trimmed.fastq" if sample.paired else None
+	sample.trimmed1Unpaired = out_fastq_pre + "_R1_unpaired.fastq" if sample.paired else None
+	sample.trimmed2 = out_fastq_pre + "_R2_trimmed.fastq" if sample.paired else None
+	sample.trimmed2Unpaired + "_R2_unpaired.fastq" if sample.paired else None
 
 	#if not sample.paired:
 	#	pm.clean_add(sample.fastq, conditional=True)
