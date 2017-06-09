@@ -2,7 +2,7 @@
 resources:
   #adapters: /data/groups/lab_bock/shared/resources/adapters/illumina.fa
   genomes: ${GENOMES}
-  adapters: /data/groups/lab_bock/shared/resources/adapters/epignome_adapters_2_add.fa
+  adapters: ${RESOURCES}adapters/illumina.fa
   # Comment out temporarily to transition to refgenie structure
   # genome_index:
   #   hg38_cdna: /data/groups/lab_bock/shared/resources/genomes/hg38_cdna/indexed_kallisto/hg38_kallisto_index.idx
