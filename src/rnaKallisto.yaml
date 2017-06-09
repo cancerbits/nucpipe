@@ -1,12 +1,14 @@
 # Reference genomes
 resources:
   #adapters: /data/groups/lab_bock/shared/resources/adapters/illumina.fa
+  genomes: ${GENOMES}
   adapters: /data/groups/lab_bock/shared/resources/adapters/epignome_adapters_2_add.fa
-  genome_index:
-    hg38_cdna: /data/groups/lab_bock/shared/resources/genomes/hg38_cdna/indexed_kallisto/hg38_kallisto_index.idx
-    hg19_cdna: /data/groups/lab_bock/shared/resources/genomes/hg19_cdna/indexed_kallisto/hg19_kallisto_index.idx
-    mm10_cdna: /data/groups/lab_bock/shared/resources/genomes/mm10_cdna/indexed_kallisto/mm10_kallisto_index.idx
-    ercc_cdna: /data/groups/lab_bock/shared/resources/genomes/ERCC92_cdna/indexed_kallisto/ERCC92_kallisto_index.idx
+  # Comment out temporarily to transition to refgenie structure
+  # genome_index:
+  #   hg38_cdna: /data/groups/lab_bock/shared/resources/genomes/hg38_cdna/indexed_kallisto/hg38_kallisto_index.idx
+  #   hg19_cdna: /data/groups/lab_bock/shared/resources/genomes/hg19_cdna/indexed_kallisto/hg19_kallisto_index.idx
+  #   mm10_cdna: /data/groups/lab_bock/shared/resources/genomes/mm10_cdna/indexed_kallisto/mm10_kallisto_index.idx
+  #   ercc_cdna: /data/groups/lab_bock/shared/resources/genomes/ERCC92_cdna/indexed_kallisto/ERCC92_kallisto_index.idx
 
 tools:
   # in the tools section, you may provide the CpG-seq pipeline with the absolute path of the required bioinformatic tools

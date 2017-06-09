@@ -200,7 +200,10 @@ def process(sample, pipeline_config, args):
 
 	inputFastq = sample.trimmed1 if sample.paired else sample.trimmed
 	inputFastq2 = sample.trimmed1 if sample.paired else None
-	transcriptomeIndex = resources.genome_index[sample.transcriptome]
+	transcriptomeIndex = os.path.join(	pm.config.resources.genomes, 
+										sample.transcriptome,
+										"indexed_kallisto",
+										sample.transcriptome + "_kallisto_index.idx")
 
 	bval = 0 # Number of bootstrap samples (default: 0)
 	size = 50 # Estimated average fragment length
