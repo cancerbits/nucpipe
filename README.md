@@ -30,7 +30,7 @@ pip install --user https://github.com/databio/pararead/zipball/master
 
 There are two configuration options: You can either set up environment variables to fit the default configuration, or change the configuration file to fit your environment. Choose one:
 
-**Option 1: Default configuration** (recommended; e.g. [src/rrbs.yaml](src/rrbs.yaml)). 
+**Option 1: Default configuration** (recommended; `.yaml` files in [src/](src/)). 
   - Make sure the executable tools (java, samtools, bowtie2, etc.) are in your PATH.
   - Set up environment variables to point to `jar` files for the java tools (`picard` and `trimmomatic`).
   ```
@@ -44,14 +44,14 @@ There are two configuration options: You can either set up environment variables
   ```
   
 
-**Option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file ([src/rrbs.yaml](src/rrbs.yaml)) appropriately. 
+**Option 2: Custom configuration**. Instead, you can also put absolute paths to each tool or resource in the configuration file to fit your local setup. Just change the pipeline configuration file (`.yaml` files in [src/](src/)) appropriately. 
 
 
 ## Running the pipeline
 
-You never need to interface with the pipeline directly, but you can if you want. Just run `python src/rrbs.py -h` to see usage. But the best way to use this pipeline is to run it using looper. You will need to tell looper about your project. Example project data are in the [examples/test_project](examples/test_project) folder. Run the pipeline across all samples in the test project with this command:
+You never need to interface with the pipeline directly, but you can if you want. Just run `python src/SCRIPTNAME.py -h` to see usage. But the best way to use this pipeline is to run it using looper. You will need to tell looper about your project. Example project data are in the [examples/](examples/) folder. Run the pipeline across all samples in the test project with this command:
 ```
-looper run examples/test_project/test_config.yaml
+looper run examples/test_config.yaml
 ```
 
 If the looper executable in not your `$PATH`, add the following line to your `.bashrc` or `.profile`:
@@ -60,15 +60,15 @@ If the looper executable in not your `$PATH`, add the following line to your `.b
 export PATH=$PATH:~/.local/bin
 ```
 
-Now, adapt the example project to your project. Here's a quick start: You need to build two files for your project (follow examples in the [examples/test_project](examples/test_project/) folder):
+Now, adapt the example project to your project. Here's a quick start: You need to build two files for your project (follow examples in the [examples/](examples/) folder):
 
 - [project config file](examples/test_project/test_config.yaml) -- describes output locations, pointers to data, etc.
 - [sample annotation file](examples/test_project/test_annotation.csv) -- comma-separated value (CSV) list of your samples.
 
 Your annotation file must specify these columns:
 - sample_name
-- library (must be 'RRBS' or 'WGBS')
-- organism (may be 'human' or 'mouse')
+- library
+- organism
 - read1
 - read2
 - whatever else you want

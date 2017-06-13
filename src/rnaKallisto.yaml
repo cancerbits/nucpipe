@@ -1,21 +1,15 @@
-
 resources:
   genomes: ${GENOMES}
   adapters: ${RESOURCES}adapters/illumina.fa
 
 tools:
-  # in the tools section, you may provide the CpG-seq pipeline with the absolute path of the required bioinformatic tools
-  # set to 'java' or 'picard', to use the tool from your $PATH variable
   python: python
   java: java
   samtools: samtools
   picard: ${PICARD}
   trimmomatic: ${TRIMMOMATIC}
-  trimmomatic_epignome: ${TRIMMOMATIC_EPIGNOME}
   kallisto: kallisto
 
-# the parameters section is intended for all parameters passed to bioinformatic tools
 parameters:
-  # which trimmer to use:
-  # choose between ["trimmomatic", "skewer"]
+  # which trimmer to use: choose between ["trimmomatic", "skewer"]
   trimmer: "skewer"
