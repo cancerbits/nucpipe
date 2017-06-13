@@ -180,17 +180,21 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed2Unpaired, conditional=True)
 
 	elif pipeline_config.parameters.trimmer == "skewer":
-		cmd = tk.skewer(
+		sample.trimlog = os.path.join(sample.paths.sample_root, "skewer/trim.log")
+		ngstk.make_dir(os.path.join(sample.paths.sample_root, "skewer/"))
+		cmd = ngstk.skewer(
 			inputFastq1=sample.fastq1 if sample.paired else sample.fastq,
 			inputFastq2=sample.fastq2 if sample.paired else None,
-			outputPrefix=os.path.join(sample.paths.unmapped, sample.sample_name),
+			outputPrefix=os.path.join(sample.paths.sample_root, "fastq/", sample.sample_name),
 			outputFastq1=sample.trimmed1 if sample.paired else sample.trimmed,
 			outputFastq2=sample.trimmed2 if sample.paired else None,
 			trimLog=sample.trimlog,
 			cpus=args.cores,
 			adapters=pipeline_config.resources.adapters
 		)
-		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True)
+		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True, 
+			follow = ngstk.check_trim(sample.trimmed, sample.trimmed2, sample.paired,
+				fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc/")))
 		if not sample.paired:
 			pm.clean_add(sample.trimmed, conditional=True)
 		else:
