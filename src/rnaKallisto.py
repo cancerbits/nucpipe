@@ -221,9 +221,9 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed2, conditional=True)
 
 	# ERCC Spike-in alignment
-########################################################################################
-if not (args.ERCC_mix == "False" ):
-	pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
+	########################################################################################
+	if not (args.ERCC_mix == "False" ):
+		pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
 	# Sanity checks:
 	def check_fastq_ERCC():
