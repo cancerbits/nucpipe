@@ -51,6 +51,7 @@ def arg_parser(parser):
 	"""
 	Global options for pipeline.
 	"""
+
 	parser.add_argument(
 		"-y", "--sample-yaml",
 		dest="sample_config",
@@ -66,6 +67,17 @@ def arg_parser(parser):
 	)
 	return parser
 
+	# Add ERCC pipeline-specific arguments
+	parser.add_argument('-e', '--ercc',
+				default = "ERCC92",
+				dest = 'ERCC_assembly',
+				type = str,
+				help = 'ERCC Assembly')
+	parser.add_argument('-em', '--ercc-mix',
+				default = "False",
+				dest = 'ERCC_mix',
+				help = 'ERCC mix. If False no ERCC analysis will be performed.')
+	parser.add_argument('-f', dest='filter', action='store_false', default=True)
 
 def process(sample, pipeline_config, args):
 	"""
@@ -90,7 +102,14 @@ def process(sample, pipeline_config, args):
 	print(pm.config)
 	tools = pm.config.tools  # Convenience alias
 	param = pm.config.parameters
-	resources = pm.config.resources
+	
+	# Resources
+	pm.config.resources.ref_genome = os.path.join(pm.config.resources.genomes, args.genome_assembly)
+	pm.config.resources.ref_genome_fasta = os.path.join(pm.config.resources.genomes, args.genome_assembly, args.genome_assembly + ".fa")
+	pm.config.resources.ref_ERCC_fasta = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, args.ERCC_assembly + ".fa")
+	pm.config.resources.chrom_sizes = os.path.join(pm.config.resources.genomes, args.genome_assembly, args.genome_assembly + ".chromSizes")
+	pm.config.resources.bowtie_indexed_genome = os.path.join(pm.config.resources.genomes, args.genome_assembly, "indexed_bowtie1", args.genome_assembly)
+	pm.config.resources.bowtie_indexed_ERCC = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, "indexed_bowtie1", args.ERCC_assembly)
 
 	raw_folder = os.path.join(sample.paths.sample_root, "raw")
 	fastq_folder = os.path.join(sample.paths.sample_root, "fastq")
@@ -200,6 +219,70 @@ def process(sample, pipeline_config, args):
 		else:
 			pm.clean_add(sample.trimmed1, conditional=True)
 			pm.clean_add(sample.trimmed2, conditional=True)
+
+	# ERCC Spike-in alignment
+########################################################################################
+if not (args.ERCC_mix == "False" ):
+	pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
+
+	# Sanity checks:
+	def check_fastq_ERCC():
+		raw_reads = ngstk.count_reads(unmappable_bam + ".bam",args.paired_end)
+		pm.report_result("ERCC_raw_reads", str(raw_reads))
+		fastq_reads = ngstk.count_reads(unmappable_bam + "_R1.fastq", paired_end=args.paired_end)
+		pm.report_result("ERCC_fastq_reads", fastq_reads)
+		if (fastq_reads != int(raw_reads)):
+			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
+
+	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
+	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
+	pm.run(cmd, unmappable_bam + ".bam", shell=True)
+
+	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
+	pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
+
+	pm.timestamp("### ERCC: Bowtie1 alignment: ")
+	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.ERCC_assembly)
+	pm.make_sure_path_exists(bowtie1_folder)
+	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + "_ERCC.aln.sam")
+
+	if not args.paired_end:
+		cmd = tools.bowtie1
+		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
+		cmd += resources.bowtie_indexed_ERCC + " "
+		cmd += unmappable_bam + "_R1.fastq"
+		cmd += " -S " + out_bowtie1
+	else:
+		cmd = tools.bowtie1
+		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
+		cmd += resources.bowtie_indexed_ERCC
+		cmd += " -1 " + unmappable_bam + "_R1.fastq"
+		cmd += " -2 " + unmappable_bam + "_R2.fastq"
+		cmd += " -S " + out_bowtie1
+
+#	if not args.paired_end:
+#		cmd = param.bowtie1
+#		cmd += " -q -p 6 -a -m 100 --sam "
+#		cmd += param.bowtie_indexed_ERCC + " "
+#		cmd += unmappable_bam + "_R1.fastq"
+#		cmd += " " + out_bowtie1
+#	else:
+#		cmd = param.bowtie1
+#		cmd += " -q -p 6 -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "
+#		cmd += param.bowtie_indexed_ERCC
+#		cmd += " -1 " + unmappable_bam + "_R1.fastq"
+#		cmd += " -2 " + unmappable_bam + "_R2.fastq"
+#		cmd += " " + out_bowtie1
+
+	pm.run(cmd, out_bowtie1,follow=lambda: pm.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
+
+	pm.timestamp("### ERCC: SAM to BAM conversion, sorting and depth calculation: ")
+	cmd = ngstk.sam_conversions(out_bowtie1)
+	pm.run(cmd, re.sub(".sam$" , "_sorted.depth", out_bowtie1), shell=True)
+
+	pm.clean_add(out_bowtie1, conditional=False)
+	pm.clean_add(re.sub(".sam$" , ".bam", out_bowtie1), conditional=False)
+	pm.clean_add(unmappable_bam + "*.fastq", conditional=False)
 
 	# With kallisto from unmapped reads
 	pm.timestamp("Quantifying read counts with kallisto")
