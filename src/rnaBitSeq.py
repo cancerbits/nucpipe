@@ -28,7 +28,7 @@ parser.add_argument('-e', '--ercc',
 				help = 'ERCC Assembly')
 parser.add_argument('-em', '--ercc-mix',
 				default = "False",
-				dest = 'ERCC_mix',
+				dest = 'ERCC_spikein',
 				help = 'ERCC mix. If False no ERCC analysis will be performed.')
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
 
