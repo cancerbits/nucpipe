@@ -1,6 +1,7 @@
 protocol_mapping:
   RNA-seq: >
     rnaBitSeq.py -f;
+    rnaKallisto.py;
     rnaTopHat.py -f
   SMART:  >
     rnaBitSeq.py -f;
