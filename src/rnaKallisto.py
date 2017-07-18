@@ -65,20 +65,19 @@ def arg_parser(parser):
 		default=False,
 		help="Enables quantseq specific options"
 	)
-	return parser
-
-	# Add ERCC pipeline-specific arguments
 	parser.add_argument('-e', '--ercc',
 				default = "ERCC92",
 				dest = 'ERCC_assembly',
 				type = str,
-				help = 'ERCC Assembly')
+				help = 'ERCC Assembly'
+	)
 	parser.add_argument('-em', '--ercc-mix',
 				default = "False",
 				dest = 'ERCC_mix',
-				help = 'ERCC mix. If False no ERCC analysis will be performed.')
-	parser.add_argument('-f', dest='filter', action='store_false', default=True)
-
+				help = 'ERCC mix. If False no ERCC analysis will be performed.'
+	)
+	return parser
+	
 def process(sample, pipeline_config, args):
 	"""
 	This takes unmapped Bam files and makes trimmed, aligned, duplicate marked
@@ -98,12 +97,10 @@ def process(sample, pipeline_config, args):
 	# Start Pypiper object
 	pm = pypiper.PipelineManager("rnaKallisto", sample.paths.sample_root, args=args)
 
-	print "\nPipeline configuration:"
-	print(pm.config)
-	tools = pm.config.tools  # Convenience alias
-	param = pm.config.parameters
-	
-	# Resources
+	# Specify tools
+	pm.config.tools.scripts_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tools")
+
+	# Specify resources
 	pm.config.resources.ref_genome = os.path.join(pm.config.resources.genomes, args.genome_assembly)
 	pm.config.resources.ref_genome_fasta = os.path.join(pm.config.resources.genomes, args.genome_assembly, args.genome_assembly + ".fa")
 	pm.config.resources.ref_ERCC_fasta = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, args.ERCC_assembly + ".fa")
@@ -111,6 +108,12 @@ def process(sample, pipeline_config, args):
 	pm.config.resources.bowtie_indexed_genome = os.path.join(pm.config.resources.genomes, args.genome_assembly, "indexed_bowtie1", args.genome_assembly)
 	pm.config.resources.bowtie_indexed_ERCC = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, "indexed_bowtie1", args.ERCC_assembly)
 
+	print "\nPipeline configuration:"
+	print(pm.config)
+	tools = pm.config.tools  # Convenience alias
+	param = pm.config.parameters
+	resources = pm.config.resources
+		
 	raw_folder = os.path.join(sample.paths.sample_root, "raw")
 	fastq_folder = os.path.join(sample.paths.sample_root, "fastq")
 
@@ -185,7 +188,6 @@ def process(sample, pipeline_config, args):
 		cmd += " SLIDINGWINDOW:4:1"
 		cmd += " MAXINFO:16:0.40"
 		cmd += " MINLEN:21"
-
 
 		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True,
 			follow = ngstk.check_trim(sample.trimmed, sample.trimmed2, sample.paired,
