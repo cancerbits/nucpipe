@@ -1,4 +1,7 @@
 protocol_mapping:
+  scRNA-seq: >
+    rnaKallisto.py -f;
+    rnaBitSeq.py -f;
   RNA-seq: >
     rnaBitSeq.py -f;
     rnaTopHat.py -f
