@@ -46,7 +46,6 @@ def main():
 	# Start main function
 	process(sample, pipeline_config, args)
 
-
 def arg_parser(parser):
 	"""
 	Global options for pipeline.
@@ -76,6 +75,7 @@ def arg_parser(parser):
 				dest = 'ERCC_mix',
 				help = 'ERCC mix. If False no ERCC analysis will be performed.'
 	)
+	parser.add_argument('-f', dest='filter', action='store_false', default=True)
 	return parser
 	
 def process(sample, pipeline_config, args):
