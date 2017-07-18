@@ -27,7 +27,7 @@ parser.add_argument('-e', '--ercc',
 				type = str,
 				help = 'ERCC Assembly')
 parser.add_argument('-em', '--ercc-mix',
-				default = "ERCC_spikein",
+				default = "False",
 				dest = 'ERCC_mix',
 				help = 'ERCC mix. If False no ERCC analysis will be performed.')
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
@@ -54,15 +54,15 @@ outfolder = os.path.abspath(os.path.join(args.output_parent, args.sample_name))
 pm = pypiper.PipelineManager(name = "rnaBitSeq", outfolder = outfolder, args = args)
 
 # Tools
-pm.config.tools.scripts_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tools")
+# pm.config.tools.scripts_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tools")
 
 # Resources
-pm.config.resources.ref_genome = os.path.join(pm.config.resources.genomes, args.genome_assembly)
-pm.config.resources.ref_genome_fasta = os.path.join(pm.config.resources.genomes, args.genome_assembly, args.genome_assembly + ".fa")
-pm.config.resources.ref_ERCC_fasta = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, args.ERCC_assembly + ".fa")
-pm.config.resources.chrom_sizes = os.path.join(pm.config.resources.genomes, args.genome_assembly, args.genome_assembly + ".chromSizes")
-pm.config.resources.bowtie_indexed_genome = os.path.join(pm.config.resources.genomes, args.genome_assembly, "indexed_bowtie1", args.genome_assembly)
-pm.config.resources.bowtie_indexed_ERCC = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, "indexed_bowtie1", args.ERCC_assembly)
+# pm.config.resources.ref_genome = os.path.join(pm.config.resources.genomes, args.genome_assembly)
+# pm.config.resources.ref_genome_fasta = os.path.join(pm.config.resources.genomes, args.genome_assembly, args.genome_assembly + ".fa")
+# pm.config.resources.ref_ERCC_fasta = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, args.ERCC_assembly + ".fa")
+# pm.config.resources.chrom_sizes = os.path.join(pm.config.resources.genomes, args.genome_assembly, args.genome_assembly + ".chromSizes")
+# pm.config.resources.bowtie_indexed_genome = os.path.join(pm.config.resources.genomes, args.genome_assembly, "indexed_bowtie1", args.genome_assembly)
+# pm.config.resources.bowtie_indexed_ERCC = os.path.join(pm.config.resources.genomes, args.ERCC_assembly, "indexed_bowtie1", args.ERCC_assembly)
 
 # Output
 pm.config.parameters.pipeline_outfolder = outfolder
