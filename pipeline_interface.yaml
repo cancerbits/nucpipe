@@ -2,9 +2,11 @@ protocol_mapping:
   scRNA-seq: >
     rnaKallisto.py -f;
     rnaBitSeq.py -f;
+    rnaTopHat.py -f
   RNA-seq: >
     rnaKallisto.py -f;
     rnaBitSeq.py -f;
+    rnaTopHat.py -f
   SMART:  >
     rnaBitSeq.py -f;
     rnaTopHat.py -f
