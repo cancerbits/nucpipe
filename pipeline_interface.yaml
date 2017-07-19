@@ -30,9 +30,6 @@ pipelines:
       "--genome": transcriptome
       "--input": data_source
       "--single-or-paired": read_type
-    optional_arguments:
-      "--input2": read2
-      "--ercc-mix": ERCC_spikein
     required_input_files: [data_source]
     ngs_input_files: [data_source]    
     resources:
