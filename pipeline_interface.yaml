@@ -55,9 +55,6 @@ pipelines:
       "--genome": genome
       "--input": data_source
       "--single-or-paired": read_type
-    optional_arguments:
-      "-w": wigsum
-      "--input2": read2
     resources:
       default:
         file_size: "0"
