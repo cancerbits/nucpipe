@@ -63,7 +63,7 @@ pipelines:
         file_size: "0"
         cores: "2"
         mem: "60000"
-        time: "10-00:00:00"
+        time: "7-00:00:00"
 
   rnaESAT.py:
     name: rnaESAT
