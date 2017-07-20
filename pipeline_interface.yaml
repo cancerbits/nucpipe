@@ -88,7 +88,6 @@ pipelines:
     required_input_files: [data_source]
     ngs_input_files: [data_source]
     arguments:
-      "--sample-yaml": yaml_file
       "--sample-name": sample_name
       "--input": data_source
       "--single-or-paired": read_type
