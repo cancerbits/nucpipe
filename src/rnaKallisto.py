@@ -121,7 +121,7 @@ def process(sample, pipeline_config, args):
 	sample.trimmed1 = out_fastq_pre + "_R1_trimmed.fastq" if sample.paired else None
 	sample.trimmed1Unpaired = out_fastq_pre + "_R1_unpaired.fastq" if sample.paired else None
 	sample.trimmed2 = out_fastq_pre + "_R2_trimmed.fastq" if sample.paired else None
-	sample.trimmed2Unpaired + "_R2_unpaired.fastq" if sample.paired else None
+	sample.trimmed2Unpaired = out_fastq_pre + "_R2_unpaired.fastq" if sample.paired else None
 
 	#if not sample.paired:
 	#	pm.clean_add(sample.fastq, conditional=True)
