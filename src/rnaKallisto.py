@@ -101,16 +101,6 @@ def process(sample, pipeline_config, args):
 	# Create a ngstk object
 	ngstk = pypiper.NGSTk(pm=pm)
 
-	# Merge Bam files if more than one technical replicate
-	if len(sample.data_path.split(" ")) > 1:
-		pm.timestamp("Merging bam files from replicates")
-		cmd = tk.merge_bams(
-			inputBams=sample.data_path.split(" "),  # this is a list of sample paths
-			outputBam=sample.unmapped
-		)
-		pm.run(cmd, sample.unmapped, shell=True)
-		sample.data_path = sample.unmapped
-
 	# Convert bam to fastq
 	pm.timestamp("Converting to Fastq format")
 
