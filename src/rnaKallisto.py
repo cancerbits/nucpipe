@@ -104,7 +104,7 @@ def process(sample, pipeline_config, args):
 	# Merge Bam files if more than one technical replicate
 	if len(sample.data_path.split(" ")) > 1:
 		pm.timestamp("Merging bam files from replicates")
-		cmd = tk.mergeBams(
+		cmd = tk.merge_bams(
 			inputBams=sample.data_path.split(" "),  # this is a list of sample paths
 			outputBam=sample.unmapped
 		)
