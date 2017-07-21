@@ -2,6 +2,7 @@ protocol_mapping:
   scRNA-seq: >
     rnaKallisto.py -f;
     rnaBitSeq.py -f;
+    rnaTopHat.py -f
   RNA-seq: >
     rnaKallisto.py -f;
     rnaBitSeq.py -f;
@@ -31,9 +32,6 @@ pipelines:
       "--genome": transcriptome
       "--input": data_source
       "--single-or-paired": read_type
-    optional_arguments:
-      "--input2": read2
-      "--ercc-mix": ERCC_spikein
     required_input_files: [data_source]
     ngs_input_files: [data_source]    
     resources:
@@ -59,9 +57,6 @@ pipelines:
       "--genome": genome
       "--input": data_source
       "--single-or-paired": read_type
-    optional_arguments:
-      "-w": wigsum
-      "--input2": read2
     resources:
       default:
         file_size: "0"
