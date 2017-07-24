@@ -227,16 +227,16 @@ def process(sample, pipeline_config, args):
 		if (fastq_reads != int(raw_reads)):
 			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
 
-	#bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
-	#pm.make_sure_path_exists(bowtie1_folder)
-	#out_bowtie1 = os.path.join(bowtie1_folder, args.folder_name + ".fastq")
+	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
+	pm.make_sure_path_exists(bowtie1_folder)
+	out_bowtie1 = os.path.join(bowtie1_folder, args.folder_name + ".fastq")
 
-	#unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
-	#cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
-	#pm.run(cmd, unmappable_bam + ".bam", shell=True)
+	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
+	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
+	pm.run(cmd, unmappable_bam + ".bam", shell=True)
 
-	#cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
-	#pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
+	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
+	pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
 
 	pm.timestamp("### ERCC: Bowtie1 alignment: ")
 	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.ERCC_assembly)
