@@ -9,6 +9,7 @@ from argparse import ArgumentParser
 import yaml
 import pypiper
 import os
+import re
 
 try:
 	from pipelines.models import AttributeDict
