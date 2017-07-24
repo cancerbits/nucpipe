@@ -92,6 +92,7 @@ pipelines:
       "--sample-yaml": yaml_file
       "--sample-name": sample_name
       "--input": data_source
+      "--genome": genome
       "--single-or-paired": read_type
     optional_arguments:
       "--input2": read2
