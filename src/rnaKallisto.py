@@ -229,7 +229,7 @@ def process(sample, pipeline_config, args):
 
 	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
 	pm.make_sure_path_exists(bowtie1_folder)
-	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + ".aln.sam")
+	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + "_R1.fastq")
 
 	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
 	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
