@@ -227,6 +227,7 @@ def process(sample, pipeline_config, args):
 		if (fastq_reads != int(raw_reads)):
 			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
 
+	global out_bowtie1
 	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
 	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
 	pm.run(cmd, unmappable_bam + ".bam", shell=True)
