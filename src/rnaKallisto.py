@@ -221,19 +221,19 @@ def process(sample, pipeline_config, args):
 	pm.make_sure_path_exists(bowtie1_folder)
 	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + ".aln.sam")
 
-		if not args.paired_end:
-			cmd = tools.bowtie1
-			cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
-			cmd += resources.bowtie_indexed_genome + " "
-			cmd += out_fastq_pre + "_R1_trimmed.fastq"
-			cmd += " " + out_bowtie1
-		else:
-			cmd = tools.bowtie1
-			cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "    # also checked --rf (1% aln) and --ff (0% aln) --fr(8% aln)
-			cmd += resources.bowtie_indexed_genome
-			cmd += " -1 " + out_fastq_pre + "_R1_trimmed.fastq"
-			cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
-			cmd += " " + out_bowtie1
+	#	if not args.paired_end:
+	#		cmd = tools.bowtie1
+	#		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
+	#		cmd += resources.bowtie_indexed_genome + " "
+	#		cmd += out_fastq_pre + "_R1_trimmed.fastq"
+	#		cmd += " " + out_bowtie1
+	#	else:
+	#		cmd = tools.bowtie1
+	#		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "    # also checked --rf (1% aln) and --ff (0% aln) --fr(8% aln)
+	#		cmd += resources.bowtie_indexed_genome
+	#		cmd += " -1 " + out_fastq_pre + "_R1_trimmed.fastq"
+	#		cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
+	#		cmd += " " + out_bowtie1
 
 	pm.run(cmd, out_bowtie1,
 			follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
