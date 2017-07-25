@@ -41,6 +41,15 @@ def main():
 	parser = pypiper.add_pypiper_args(parser, all_args = True)
 	args = parser.parse_args()
 
+	if args.single_or_paired == "paired":
+		args.paired_end = True
+	else:
+		args.paired_end = False
+
+	if not args.input:
+		parser.print_help()
+		raise SystemExit
+
 	# Read in yaml configs
 	sample = AttributeDict(yaml.load(open(args.sample_config, "r")))
 	pipeline_config = AttributeDict(yaml.load(open(os.path.join(os.path.dirname(__file__), args.config_file), "r")))
@@ -77,15 +86,8 @@ def arg_parser(parser):
 		help = 'ERCC mix. If False no ERCC analysis will be performed.'
 	)
 	parser.add_argument('-f', dest='filter', action='store_false', default=True)
-
-	args = parser.parse_args()
-
-	if args.single_or_paired == "paired":
-		args.paired_end = True
-	else:
-		args.paired_end = False
-
 	return parser
+
 	
 def process(sample, pipeline_config, args):
 	"""
