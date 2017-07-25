@@ -79,6 +79,15 @@ def arg_parser(parser):
 	)
 	parser.add_argument('-f', dest='filter', action='store_false', default=True)
 	return parser
+
+	if args.single_or_paired == "paired":
+		args.paired_end = True
+	else:
+		args.paired_end = False
+
+	if not args.input:
+		parser.print_help()
+		raise SystemExit
 	
 def process(sample, pipeline_config, args):
 	"""
@@ -228,7 +237,7 @@ def process(sample, pipeline_config, args):
 		if (fastq_reads != int(raw_reads)):
 			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
 
-	# add bowtie1 variable
+	# add out_bowtie1 variable
 	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
 	pm.make_sure_path_exists(bowtie1_folder)
 	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + ".aln.sam")
