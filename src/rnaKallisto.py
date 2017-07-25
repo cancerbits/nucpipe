@@ -49,9 +49,8 @@ def main():
 	process(sample, pipeline_config, args)
 
 	# Argument parsing
-	parser = ArgumentParser(description='Pypiper arguments.')
-
-	parser = pypiper.add_pypiper_args(parser, groups=["all"])
+def arg_parser(parser):
+	# Global options for pipeline
 
 	parser.add_argument(
 		"-y", "--sample-yaml",
@@ -86,9 +85,7 @@ def main():
 	else:
 		args.paired_end = False
 
-	if not args.input:
-		parser.print_help()
-		raise SystemExit
+	return parser
 	
 def process(sample, pipeline_config, args):
 	"""
