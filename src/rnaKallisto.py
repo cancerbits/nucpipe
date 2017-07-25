@@ -10,7 +10,6 @@ import yaml
 import pypiper
 import os
 import re
-import subprocess
 
 try:
 	from pipelines.models import AttributeDict
@@ -77,7 +76,6 @@ def arg_parser(parser):
 		dest = 'ERCC_mix',
 		help = 'ERCC mix. If False no ERCC analysis will be performed.'
 	)
-	parser.add_argument('-f', dest='filter', action='store_false', default=True)
 	return parser
 	
 def process(sample, pipeline_config, args):
@@ -214,40 +212,12 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed1, conditional=True)
 			pm.clean_add(sample.trimmed2, conditional=True)
 
-	
-	# With kallisto from unmapped reads
-	pm.timestamp("Quantifying read counts with kallisto")
-
-	inputFastq = sample.trimmed1 if sample.paired else sample.trimmed
-	inputFastq2 = sample.trimmed1 if sample.paired else None
-	transcriptomeIndex = os.path.join(	pm.config.resources.genomes, 
-										sample.transcriptome,
-										"indexed_kallisto",
-										sample.transcriptome + "_kallisto_index.idx")
-
-	bval = 0 # Number of bootstrap samples (default: 0)
-	size = 50 # Estimated average fragment length
-	sdev = 20 # Estimated standard deviation of fragment length
-	sample.paths.quant = os.path.join(sample.paths.sample_root, "kallisto")
-	sample.kallistoQuant = os.path.join(sample.paths.quant,"abundance.h5")
-	cmd1 = tools.kallisto + " quant -b {0} -l {1} -s {2} -i {3} -o {4} -t {5}".format(bval, size, sdev, transcriptomeIndex, sample.paths.quant, args.cores)
-	if not sample.paired:
-		cmd1 += " --single {0}".format(inputFastq)
-	else:
-		cmd1 += " {0} {1}".format(inputFastq, inputFastq2)
-	cmd2 = tools.kallisto + " h5dump -o {0} {0}/abundance.h5".format(sample.paths.quant)
-
-	pm.run([cmd1,cmd2], sample.kallistoQuant, shell=True, nofail=True)
-
-	pm.stop_pipeline()
-	print("Finished processing sample %s." % sample.sample_name)
 
 
-
-	# ERCC Spike-in alignment
-	########################################################################################
-	if not (args.ERCC_mix == "False" ):
-		pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
+# ERCC Spike-in alignment
+########################################################################################
+if not (args.ERCC_mix == "False" ):
+	pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
 	# Sanity checks:
 	def check_fastq_ERCC():
@@ -257,10 +227,6 @@ def process(sample, pipeline_config, args):
 		pm.report_result("ERCC_fastq_reads", fastq_reads)
 		if (fastq_reads != int(raw_reads)):
 			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
-
-	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
-	pm.make_sure_path_exists(bowtie1_folder)
-	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + "_R1.fastq")
 
 	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
 	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
@@ -288,6 +254,7 @@ def process(sample, pipeline_config, args):
 		cmd += " -2 " + unmappable_bam + "_R2.fastq"
 		cmd += " -S " + out_bowtie1
 
+
 #	if not args.paired_end:
 #		cmd = param.bowtie1
 #		cmd += " -q -p 6 -a -m 100 --sam "
@@ -312,9 +279,9 @@ def process(sample, pipeline_config, args):
 	pm.clean_add(re.sub(".sam$" , ".bam", out_bowtie1), conditional=False)
 	pm.clean_add(unmappable_bam + "*.fastq", conditional=False)
 
-# ERCC expression analysis
-########################################################################################
-	pm.timestamp("### ERCC: Expression analysis (rnaKallisto): ")
+
+	# Quantifying ERCC spike-in
+	pm.timestamp("### ERCC: Expression analysis (BitSeq): ")
 
 	bitSeq_dir = os.path.join(bowtie1_folder,"bitSeq")
 	pm.make_sure_path_exists(bitSeq_dir)
@@ -323,6 +290,34 @@ def process(sample, pipeline_config, args):
 	cmd = tools.Rscript + " " + os.path.join(tools.scripts_dir,"bitSeq_parallel.R") + " " + out_bowtie1 + " " + bitSeq_dir + " " + resources.ref_ERCC_fasta
 	pm.run(cmd, out_bitSeq)
 
+
+
+	# With kallisto from unmapped reads
+	pm.timestamp("Quantifying read counts with kallisto")
+
+	inputFastq = sample.trimmed1 if sample.paired else sample.trimmed
+	inputFastq2 = sample.trimmed1 if sample.paired else None
+	transcriptomeIndex = os.path.join(	pm.config.resources.genomes, 
+										sample.transcriptome,
+										"indexed_kallisto",
+										sample.transcriptome + "_kallisto_index.idx")
+
+	bval = 0 # Number of bootstrap samples (default: 0)
+	size = 50 # Estimated average fragment length
+	sdev = 20 # Estimated standard deviation of fragment length
+	sample.paths.quant = os.path.join(sample.paths.sample_root, "kallisto")
+	sample.kallistoQuant = os.path.join(sample.paths.quant,"abundance.h5")
+	cmd1 = tools.kallisto + " quant -b {0} -l {1} -s {2} -i {3} -o {4} -t {5}".format(bval, size, sdev, transcriptomeIndex, sample.paths.quant, args.cores)
+	if not sample.paired:
+		cmd1 += " --single {0}".format(inputFastq)
+	else:
+		cmd1 += " {0} {1}".format(inputFastq, inputFastq2)
+	cmd2 = tools.kallisto + " h5dump -o {0} {0}/abundance.h5".format(sample.paths.quant)
+
+	pm.run([cmd1,cmd2], sample.kallistoQuant, shell=True, nofail=True)
+
+	pm.stop_pipeline()
+	print("Finished processing sample %s." % sample.sample_name)
 
 if __name__ == '__main__':
 	try:
