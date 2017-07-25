@@ -79,23 +79,6 @@ def arg_parser(parser):
 	)
 	parser.add_argument('-f', dest='filter', action='store_false', default=True)
 	return parser
-
-	# Core-seq as optional parameter
-	parser.add_argument('-cs', '--core-seq', default=False, dest='coreseq', action='store_true', help='CORE-seq Mode')
-
-	# Quant-Seq as optional parameter
-	parser.add_argument('-qs', '--quantseq', default=False, dest='quantseq', action='store_true', help='Quant-Seq Mode')
-
-	args = parser.parse_args()
-
-	if args.single_or_paired == "paired":
-		args.paired_end = True
-	else:
-		args.paired_end = False
-
-	if not args.input:
-		parser.print_help()
-		raise SystemExit
 	
 def process(sample, pipeline_config, args):
 	"""
@@ -233,14 +216,14 @@ def process(sample, pipeline_config, args):
 
 	# ERCC Spike-in alignment
 	########################################################################################
-	if not (args.ERCC_mix == "False" ):
-	pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
+	#if not (args.ERCC_mix == "False" ):
+	#pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
 	# Sanity checks:
 	def check_fastq_ERCC():
-		raw_reads = ngstk.count_reads(unmappable_bam + ".bam",args.paired_end)
+		raw_reads = ngstk.count_reads(unmappable_bam + ".bam",args.paired)
 		pm.report_result("ERCC_raw_reads", str(raw_reads))
-		fastq_reads = ngstk.count_reads(unmappable_bam + "_R1.fastq", paired_end=args.paired_end)
+		fastq_reads = ngstk.count_reads(unmappable_bam + "_R1.fastq", paired=args.paired)
 		pm.report_result("ERCC_fastq_reads", fastq_reads)
 		if (fastq_reads != int(raw_reads)):
 			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
@@ -254,15 +237,15 @@ def process(sample, pipeline_config, args):
 	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
 	pm.run(cmd, unmappable_bam + ".bam", shell=True)
 
-	#cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
-	#pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
+	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired)
+	pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
 
 	pm.timestamp("### ERCC: Bowtie1 alignment: ")
 	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.ERCC_assembly)
 	pm.make_sure_path_exists(bowtie1_folder)
 	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + "_ERCC.aln.sam")
 
-	if not args.paired_end:
+	if not args.paired:
 		cmd = tools.bowtie1
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 		cmd += resources.bowtie_indexed_ERCC + " "
@@ -277,7 +260,7 @@ def process(sample, pipeline_config, args):
 		cmd += " -S " + out_bowtie1
 
 
-#	if not args.paired_end:
+#	if not args.paired:
 #		cmd = param.bowtie1
 #		cmd += " -q -p 6 -a -m 100 --sam "
 #		cmd += param.bowtie_indexed_ERCC + " "
@@ -291,7 +274,7 @@ def process(sample, pipeline_config, args):
 #		cmd += " -2 " + unmappable_bam + "_R2.fastq"
 #		cmd += " " + out_bowtie1
 
-	pm.run(cmd, out_bowtie1,follow=lambda: pm.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
+	pm.run(cmd, out_bowtie1,follow=lambda: pm.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired)))
 
 	pm.timestamp("### ERCC: SAM to BAM conversion, sorting and depth calculation: ")
 	cmd = ngstk.sam_conversions(out_bowtie1)
