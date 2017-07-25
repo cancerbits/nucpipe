@@ -225,8 +225,8 @@ def process(sample, pipeline_config, args):
 
 	# ERCC Spike-in alignment
 	########################################################################################
-	#if not (args.ERCC_mix == "False" ):
-	#pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
+		if not (args.ERCC_mix == "False" ):
+			pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
 	# Sanity checks:
 	def check_fastq_ERCC():
@@ -246,8 +246,8 @@ def process(sample, pipeline_config, args):
 	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
 	pm.run(cmd, unmappable_bam + ".bam", shell=True)
 
-	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
-	pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
+#	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
+#	pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
 
 	pm.timestamp("### ERCC: Bowtie1 alignment: ")
 	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.ERCC_assembly)
