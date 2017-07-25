@@ -4,12 +4,13 @@
 QUANT-seq pipeline
 """
 
-import sys
 from argparse import ArgumentParser
-import yaml
-import pypiper
 import os
+import sys
+import yaml
+import subprocess
 import re
+import pypiper
 
 try:
 	from pipelines.models import AttributeDict
@@ -76,7 +77,25 @@ def arg_parser(parser):
 		dest = 'ERCC_mix',
 		help = 'ERCC mix. If False no ERCC analysis will be performed.'
 	)
+	parser.add_argument('-f', dest='filter', action='store_false', default=True)
 	return parser
+
+	# Core-seq as optional parameter
+	parser.add_argument('-cs', '--core-seq', default=False, dest='coreseq', action='store_true', help='CORE-seq Mode')
+
+	# Quant-Seq as optional parameter
+	parser.add_argument('-qs', '--quantseq', default=False, dest='quantseq', action='store_true', help='Quant-Seq Mode')
+
+	args = parser.parse_args()
+
+	if args.single_or_paired == "paired":
+		args.paired_end = True
+	else:
+		args.paired_end = False
+
+	if not args.input:
+		parser.print_help()
+		raise SystemExit
 	
 def process(sample, pipeline_config, args):
 	"""
@@ -212,11 +231,9 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed1, conditional=True)
 			pm.clean_add(sample.trimmed2, conditional=True)
 
-
-
-# ERCC Spike-in alignment
-########################################################################################
-if not (args.ERCC_mix == "False" ):
+	# ERCC Spike-in alignment
+	########################################################################################
+	if not (args.ERCC_mix == "False" ):
 	pm.timestamp("### ERCC: Convert unmapped reads into fastq files: ")
 
 	# Sanity checks:
@@ -228,12 +245,17 @@ if not (args.ERCC_mix == "False" ):
 		if (fastq_reads != int(raw_reads)):
 			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
 
+	# add bowtie1 variable
+	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
+	pm.make_sure_path_exists(bowtie1_folder)
+	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + ".aln.sam")
+
 	unmappable_bam = re.sub(".sam$","_unmappable",out_bowtie1)
 	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
 	pm.run(cmd, unmappable_bam + ".bam", shell=True)
 
-	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
-	pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
+	#cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired_end)
+	#pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
 
 	pm.timestamp("### ERCC: Bowtie1 alignment: ")
 	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.ERCC_assembly)
