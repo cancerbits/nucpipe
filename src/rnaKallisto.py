@@ -48,10 +48,10 @@ def main():
 	# Start main function
 	process(sample, pipeline_config, args)
 
-def arg_parser(parser):
-	"""
-	Global options for pipeline.
-	"""
+	# Argument parsing
+	parser = ArgumentParser(description='Pypiper arguments.')
+
+	parser = pypiper.add_pypiper_args(parser, groups=["all"])
 
 	parser.add_argument(
 		"-y", "--sample-yaml",
@@ -78,7 +78,6 @@ def arg_parser(parser):
 		help = 'ERCC mix. If False no ERCC analysis will be performed.'
 	)
 	parser.add_argument('-f', dest='filter', action='store_false', default=True)
-	return parser
 
 	args = parser.parse_args()
 
