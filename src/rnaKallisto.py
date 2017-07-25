@@ -80,6 +80,8 @@ def arg_parser(parser):
 	parser.add_argument('-f', dest='filter', action='store_false', default=True)
 	return parser
 
+	args = parser.parse_args()
+
 	if args.single_or_paired == "paired":
 		args.paired_end = True
 	else:
