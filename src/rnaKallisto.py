@@ -221,9 +221,9 @@ def process(sample, pipeline_config, args):
 
 	# Sanity checks:
 	def check_fastq_ERCC():
-		raw_reads = ngstk.count_reads(unmappable_bam + ".bam",args.paired)
+		raw_reads = ngstk.count_reads(unmappable_bam + ".bam",args.single_or_paired)
 		pm.report_result("ERCC_raw_reads", str(raw_reads))
-		fastq_reads = ngstk.count_reads(unmappable_bam + "_R1.fastq", paired=args.paired)
+		fastq_reads = ngstk.count_reads(unmappable_bam + "_R1.fastq", paired=args.single_or_paired)
 		pm.report_result("ERCC_fastq_reads", fastq_reads)
 		if (fastq_reads != int(raw_reads)):
 			raise Exception("Fastq conversion error? Size doesn't match unaligned bam")
@@ -237,7 +237,7 @@ def process(sample, pipeline_config, args):
 	cmd = tools.samtools + " view -hbS -f4 " + out_bowtie1 + " > " + unmappable_bam + ".bam"
 	pm.run(cmd, unmappable_bam + ".bam", shell=True)
 
-	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.paired)
+	cmd = ngstk.bam_to_fastq(unmappable_bam + ".bam", unmappable_bam, args.single_or_paired)
 	pm.run(cmd, unmappable_bam + "_R1.fastq",follow=check_fastq_ERCC)
 
 	pm.timestamp("### ERCC: Bowtie1 alignment: ")
@@ -245,7 +245,7 @@ def process(sample, pipeline_config, args):
 	pm.make_sure_path_exists(bowtie1_folder)
 	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + "_ERCC.aln.sam")
 
-	if not args.paired:
+	if not args.single_or_paired:
 		cmd = tools.bowtie1
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 		cmd += resources.bowtie_indexed_ERCC + " "
@@ -260,7 +260,7 @@ def process(sample, pipeline_config, args):
 		cmd += " -S " + out_bowtie1
 
 
-#	if not args.paired:
+#	if not args.single_or_paired:
 #		cmd = param.bowtie1
 #		cmd += " -q -p 6 -a -m 100 --sam "
 #		cmd += param.bowtie_indexed_ERCC + " "
@@ -274,7 +274,7 @@ def process(sample, pipeline_config, args):
 #		cmd += " -2 " + unmappable_bam + "_R2.fastq"
 #		cmd += " " + out_bowtie1
 
-	pm.run(cmd, out_bowtie1,follow=lambda: pm.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired)))
+	pm.run(cmd, out_bowtie1,follow=lambda: pm.report_result("ERCC_aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.ingle_or_paired)))
 
 	pm.timestamp("### ERCC: SAM to BAM conversion, sorting and depth calculation: ")
 	cmd = ngstk.sam_conversions(out_bowtie1)
