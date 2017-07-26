@@ -214,7 +214,7 @@ def process(sample, pipeline_config, args):
 										"indexed_bowtie2",
 										sample.transcriptome + ".bt2")
 
-	sample.path.aligned = os.path.join(sample.paths.sample_root, "bowtie2")
+	bowtie2_folder = os.path.join(sample.paths.sample_root, "bowtie2")
 
 	sample.paired = False
 	if args.single_or_paired == "paired": sample.paired = True
@@ -224,17 +224,17 @@ def process(sample, pipeline_config, args):
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 		cmd += resources.transcriptomeIndex + " "
 		cmd += out_fastq_pre + "_R1_trimmed.fastq"
-		cmd += " " + bowtie2
+		cmd += " " + bowtie2_folder
 	else:
 		cmd = tools.bowtie2
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "    # also checked --rf (1% aln) and --ff (0% aln) --fr(8% aln)
 		cmd += resources.transcriptomeIndex
 		cmd += " -1 " + out_fastq_pre + "_R1_trimmed.fastq"
 		cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
-		cmd += " " + bowtie2
+		cmd += " " + bowtie2_folder
 
 	pm.run(cmd, bowtie2,
-		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie2, args.paired)))
+		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie2_folder, args.paired)))
 
 
 
