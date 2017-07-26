@@ -233,8 +233,10 @@ def process(sample, pipeline_config, args):
 		cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
 		cmd += " " + bowtie2_folder
 
-	pm.run(cmd, bowtie2,
-		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie2_folder, args.paired)))
+	pm.run(cmd, os.path.join(bowtie2_folder,"align_summary.txt"), shell=False)
+	
+	#pm.run(cmd, tools.bowtie2,
+	#	follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie2_folder, args.paired)))
 
 
 
