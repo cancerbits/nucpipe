@@ -233,10 +233,7 @@ def process(sample, pipeline_config, args):
 		cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
 		cmd += " " + bowtie1_folder
 	
-	pm.run(cmd, bowtie1_folder,
-		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie1_folder, args.paired)))
-
-	#pm.run(cmd, os.path.join(bowtie2_folder,args.sample_name + ".aln.sam"), shell=False)
+	pm.run(cmd, sample.bowtie1, shell=True, nofail=True)
 
 
 	# With kallisto from unmapped reads
