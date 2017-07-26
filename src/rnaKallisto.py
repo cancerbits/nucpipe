@@ -41,15 +41,6 @@ def main():
 	parser = pypiper.add_pypiper_args(parser, all_args = True)
 	args = parser.parse_args()
 
-	if args.single_or_paired == "paired":
-		args.paired_end = True
-	else:
-		args.paired_end = False
-
-	if not args.input:
-		parser.print_help()
-		raise SystemExit
-
 	# Read in yaml configs
 	sample = AttributeDict(yaml.load(open(args.sample_config, "r")))
 	pipeline_config = AttributeDict(yaml.load(open(os.path.join(os.path.dirname(__file__), args.config_file), "r")))
@@ -211,93 +202,42 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed1, conditional=True)
 			pm.clean_add(sample.trimmed2, conditional=True)
 
-	pm.timestamp("### Bowtie1 alignment: ")
+	
 
-	bowtie1_folder = os.path.join(sample.paths.sample_root, "bowtie1")
-	pm.make_sure_path_exists(bowtie1_folder)
-	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + ".aln.sam")
+	pm.timestamp("Bowtie2 alignment")
 
-	if not args.paired_end:
-		cmd = tools.bowtie1
+	inputFastq = sample.trimmed1 if sample.paired else sample.trimmed
+	inputFastq2 = sample.trimmed1 if sample.paired else None
+
+	transcriptomeIndex = os.path.join(	pm.config.resources.genomes, 
+										sample.transcriptome,
+										"indexed_bowtie2",
+										sample.transcriptome + ".bt2")
+
+	sample.path.aligned = os.path.join(sample.paths.sample_root, "bowtie2")
+
+	sample.paired = False
+	if args.single_or_paired == "paired": sample.paired = True
+
+	if not sample.paired:
+		cmd = tools.bowtie2
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
-		cmd += resources.bowtie_indexed_genome + " "
+		cmd += resources.transcriptomeIndex + " "
 		cmd += out_fastq_pre + "_R1_trimmed.fastq"
-		cmd += " " + out_bowtie1
+		cmd += " " + bowtie2
 	else:
-		cmd = tools.bowtie1
+		cmd = tools.bowtie2
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "    # also checked --rf (1% aln) and --ff (0% aln) --fr(8% aln)
-		cmd += resources.bowtie_indexed_genome
+		cmd += resources.transcriptomeIndex
 		cmd += " -1 " + out_fastq_pre + "_R1_trimmed.fastq"
 		cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
-		cmd += " " + out_bowtie1
+		cmd += " " + bowtie2
 
-	pm.run(cmd, out_bowtie1,
-		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(out_bowtie1, args.paired_end)))
-
-	pm.timestamp("### Raw: SAM to BAM conversion and sorting: ")
-
-	if args.filter:
-		cmd = ngstk.sam_conversions(out_bowtie1,False)
-		pm.run(cmd,  re.sub(".sam$" , "_sorted.bam",out_bowtie1),shell=True)
-	else:
-		cmd = ngstk.sam_conversions(out_bowtie1,True)
-		pm.run(cmd,  re.sub(".sam$" , "_sorted.depth",out_bowtie1),shell=True)
-
-	pm.clean_add(out_bowtie1, conditional=False)
-	pm.clean_add(re.sub(".sam$" , ".bam", out_bowtie1), conditional=False)
+	pm.run(cmd, bowtie2,
+		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie2, args.paired)))
 
 
-	if not args.filter:
-		pm.timestamp("### MarkDuplicates: ")
-		aligned_file = re.sub(".sam$" , "_sorted.bam",out_bowtie1)
-		out_file = re.sub(".sam$" , "_dedup.bam",out_bowtie1)
-		metrics_file = re.sub(".sam$" , "_dedup.metrics",out_bowtie1)
-		cmd = ngstk.markDuplicates(aligned_file, out_file, metrics_file)
-		pm.run(cmd, out_file, follow= lambda: pm.report_result("Deduplicated_reads", ngstk.count_unique_mapped_reads(out_file, args.paired_end)))
 
-	if args.filter:
-		pm.timestamp("### Aligned read filtering: ")
-		out_sam_filter = bowtie1_folder + args.sample_name + ".aln.filt.sam"
-		skipped_sam = out_sam_filter.replace(".filt." , ".skipped.")
-		headerLines = subprocess.check_output("samtools view -SH " + out_bowtie1 + "|wc -l", shell=True).strip()
-		cmd = tools.python + " " + os.path.join(tools.scripts_dir,"bisulfiteReadFiltering_forRNA.py")
-		cmd += " --infile=" + out_bowtie1
-		cmd += " --outfile=" + out_sam_filter
-		cmd += " --skipped=" + skipped_sam
-		cmd += " --skipHeaderLines=" + headerLines
-		cmd += " --genome=" + args.genome_assembly
-		cmd += " --genomeDir=" + resources.ref_genome
-		cmd += " --minNonCpgSites=3"
-		cmd += " --minConversionRate=0.9"
-		cmd += " --maxConversionRate=0.1"
-		cmd += " -r"
-
-	if args.paired_end:
-		cmd = cmd + " --pairedEnd"
-
-	pm.run(cmd, out_sam_filter,follow=pm.report_result("Filtered_reads", ngstk.count_unique_mapped_reads(out_sam_filter, args.paired_end)))
-
-	pm.timestamp("### Filtered: SAM to BAM conversion, sorting and depth calculation: ")
-	cmd = ngstk.sam_conversions(out_sam_filter)
-	pm.run(cmd, re.sub(".sam$" , "_sorted.depth",out_sam_filter),shell=True)
-
-	pm.timestamp("### Skipped: SAM to BAM conversion and sorting: ")
-	cmd = ngstk.sam_conversions(skipped_sam,False)
-	pm.run(cmd, re.sub(".sam$", "_sorted.bam", skipped_sam),shell=True)
-	
-	pm.clean_add(skipped_sam, conditional=False)
-	pm.clean_add(re.sub(".sam$" , ".bam", skipped_sam), conditional=False)
-	pm.clean_add(out_sam_filter, conditional=False)
-	pm.clean_add(re.sub(".sam$" , ".bam", out_sam_filter), conditional=False)
-
-	pm.timestamp("### MarkDuplicates: ")
-	
-	aligned_file = re.sub(".sam$" , "_sorted.bam",out_sam_filter)
-	out_file = re.sub(".sam$" , "_dedup.bam",out_sam_filter)
-	metrics_file = re.sub(".sam$" , "_dedup.metrics",out_sam_filter)
-	cmd = ngstk.markDuplicates(aligned_file, out_file, metrics_file)
-	pm.run(cmd, out_file,follow=lambda: pm.report_result("Deduplicated_reads", ngstk.count_unique_mapped_reads(out_file, args.paired_end)))
-		
 	# With kallisto from unmapped reads
 	pm.timestamp("Quantifying read counts with kallisto")
 
