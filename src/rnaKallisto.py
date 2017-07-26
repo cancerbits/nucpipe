@@ -213,7 +213,7 @@ def process(sample, pipeline_config, args):
 
 	pm.timestamp("### Bowtie1 alignment: ")
 
-	bowtie1_folder = os.path.join(param.pipeline_outfolder,"bowtie1_" + args.genome_assembly)
+	bowtie1_folder = os.path.join(sample.paths.sample_root, "bowtie1")
 	pm.make_sure_path_exists(bowtie1_folder)
 	out_bowtie1 = os.path.join(bowtie1_folder, args.sample_name + ".aln.sam")
 
