@@ -204,40 +204,39 @@ def process(sample, pipeline_config, args):
 
 	
 
-	pm.timestamp("Bowtie2 alignment")
+	pm.timestamp("Bowtie1 alignment")
 
 	inputFastq = sample.trimmed1 if sample.paired else sample.trimmed
 	inputFastq2 = sample.trimmed1 if sample.paired else None
 
 	transcriptomeIndex = os.path.join(	pm.config.resources.genomes, 
 										sample.transcriptome,
-										"indexed_bowtie2",
+										"indexed_bowtie1",
 										sample.transcriptome + ".bt2")
 
-	bowtie2_folder = os.path.join(sample.paths.sample_root, "bowtie2")
+	bowtie1_folder = os.path.join(sample.paths.sample_root, "bowtie1")
 
 	sample.paired = False
 	if args.single_or_paired == "paired": sample.paired = True
 
 	if not sample.paired:
-		cmd = tools.bowtie2
+		cmd = tools.bowtie1
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 		cmd += resources.transcriptomeIndex + " "
 		cmd += out_fastq_pre + "_R1_trimmed.fastq"
-		cmd += " " + bowtie2_folder
+		cmd += " " + bowtie1_folder
 	else:
-		cmd = tools.bowtie2
+		cmd = tools.bowtie1
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "    # also checked --rf (1% aln) and --ff (0% aln) --fr(8% aln)
 		cmd += resources.transcriptomeIndex
 		cmd += " -1 " + out_fastq_pre + "_R1_trimmed.fastq"
 		cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
-		cmd += " " + bowtie2_folder
+		cmd += " " + bowtie1_folder
+	
+	pm.run(cmd, bowtie1_folder,
+		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie1_folder, args.paired)))
 
 	#pm.run(cmd, os.path.join(bowtie2_folder,args.sample_name + ".aln.sam"), shell=False)
-	
-	pm.run(cmd, bowtie2_folder,
-		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie2_folder, args.paired)))
-
 
 
 	# With kallisto from unmapped reads
