@@ -216,24 +216,24 @@ def process(sample, pipeline_config, args):
 
 	bowtie1_folder = os.path.join(sample.paths.sample_root, "bowtie1")
 
-	sample.paired = False
-	if args.single_or_paired == "paired": sample.paired = True
-
 	if not sample.paired:
 		cmd = tools.bowtie1
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --sam "
 		cmd += resources.transcriptomeIndex + " "
-		cmd += out_fastq_pre + "_R1_trimmed.fastq"
+		cmd += inputFastq + "_R1_trimmed.fastq"
 		cmd += " " + bowtie1_folder
 	else:
 		cmd = tools.bowtie1
 		cmd += " -q -p " + str(pm.cores) + " -a -m 100 --minins 0 --maxins 5000 --fr --sam --chunkmbs 200 "    # also checked --rf (1% aln) and --ff (0% aln) --fr(8% aln)
 		cmd += resources.transcriptomeIndex
-		cmd += " -1 " + out_fastq_pre + "_R1_trimmed.fastq"
-		cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
+		cmd += " -1 " + inputFastq + "_R1_trimmed.fastq"
+		cmd += " -2 " + inputFastq2 + "_R2_trimmed.fastq"
 		cmd += " " + bowtie1_folder
-	
-	pm.run(cmd, sample.paired, shell=True, nofail=True)
+
+	pm.run(cmd, bowtie1_folder,
+		follow=lambda: pm.report_result("Aligned_reads", ngstk.count_unique_mapped_reads(bowtie1_folder, args.paired)))
+
+
 
 
 	# With kallisto from unmapped reads
