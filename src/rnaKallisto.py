@@ -233,7 +233,7 @@ def process(sample, pipeline_config, args):
 		cmd += " -2 " + out_fastq_pre + "_R2_trimmed.fastq"
 		cmd += " " + bowtie1_folder
 	
-	pm.run(cmd, sample.bowtie1, shell=True, nofail=True)
+	pm.run(cmd, sample.paired, shell=True, nofail=True)
 
 
 	# With kallisto from unmapped reads
