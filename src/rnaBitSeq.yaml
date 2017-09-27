@@ -10,7 +10,7 @@ tools:
   java: java
   Rscript: Rscript
   samtools: samtools
-  picard: /cm/shared/apps/picard-tools/1.140/picard.jar
+  picard: ${PICARD}
   trimmomatic: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32.jar
   trimmomatic_epignome: ${TRIMMOMATIC_EPIGNOME}
   bowtie1: /cm/shared/apps/bowtie/1.1.1/bin/bowtie
