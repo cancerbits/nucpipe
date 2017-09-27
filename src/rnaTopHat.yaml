@@ -11,12 +11,12 @@ tools:
   Rscript: Rscript
   samtools: samtools
   picard: ${PICARD}
-  trimmomatic: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32.jar
+  trimmomatic: ${TRIMMOMATIC}
   trimmomatic_epignome: ${TRIMMOMATIC_EPIGNOME}
-  bowtie1: /cm/shared/apps/bowtie/1.1.1/bin/bowtie
-  bowtie2: /cm/shared/apps/bowtie/2.2.4/bin/bowtie2
-  wigToBigWig: /data/groups/lab_bock/shared/resources/tools/wigToBigWig
-  tophat2: /cm/shared/apps/tophat/2.0.14/bin/tophat2
+  bowtie1: bowtie
+  bowtie2: bowtie2
+  wigToBigWig: wigToBigWig
+  tophat2: tophat2
   bam2wig: /cm/shared/apps/RSeQC/2.6.1/cm/shared/apps/python/2.7.6/bin/bam2wig.py
   read_distribution: /cm/shared/apps/RSeQC/2.6.4/cm/shared/apps/python/2.7.6/bin/read_distribution.py
   gene_coverage: /cm/shared/apps/RSeQC/2.6.4/cm/shared/apps/python/2.7.6/bin/geneBody_coverage2.py

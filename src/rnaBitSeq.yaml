@@ -11,10 +11,10 @@ tools:
   Rscript: Rscript
   samtools: samtools
   picard: ${PICARD}
-  trimmomatic: /cm/shared/apps/trimmomatic/0.32/trimmomatic-0.32.jar
+  trimmomatic: ${TRIMMOMATIC}
   trimmomatic_epignome: ${TRIMMOMATIC_EPIGNOME}
-  bowtie1: /cm/shared/apps/bowtie/1.1.1/bin/bowtie
-  bowtie2: /cm/shared/apps/bowtie/2.2.4/bin/bowtie2
+  bowtie1: bowtie
+  bowtie2: bowtie2
 
 parameters:
   # parameters passed to bioinformatic tools, subclassed by tool
