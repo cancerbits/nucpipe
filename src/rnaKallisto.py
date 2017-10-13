@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-QUANT-seq pipeline
+Kallisto pipeline
 """
 
 import sys
@@ -31,17 +31,15 @@ __status__ = "Development"
 
 def main():
 	# Parse command-line arguments
-	parser = ArgumentParser(
-		prog="rnaKallisto",
-		description="Kallisto pipeline."
-	)
+	parser = ArgumentParser(prog="rnaKallisto", description="Kallisto pipeline")
 	parser = arg_parser(parser)
 	parser = pypiper.add_pypiper_args(parser, all_args = True)
 	args = parser.parse_args()
 
 	# Read in yaml configs
 	sample = AttributeDict(yaml.load(open(args.sample_config, "r")))
-	pipeline_config = AttributeDict(yaml.load(open(os.path.join(os.path.dirname(__file__), args.config_file), "r")))
+	path_conf_file = os.path.join(os.path.dirname(__file__), args.config_file)
+	pipeline_config = AttributeDict(yaml.load(open(path_conf_file), "r"))
 
 	# Start main function
 	process(sample, pipeline_config, args)
@@ -96,7 +94,8 @@ def process(sample, pipeline_config, args):
 	fastq_folder = os.path.join(sample.paths.sample_root, "fastq")
 
 	sample.paired = False
-	if args.single_or_paired == "paired": sample.paired = True
+	if args.single_or_paired == "paired":
+		sample.paired = True
 
 	# Create a ngstk object
 	ngstk = pypiper.NGSTk(pm=pm)
@@ -170,8 +169,9 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed2Unpaired, conditional=True)
 
 	elif pipeline_config.parameters.trimmer == "skewer":
-		sample.trimlog = os.path.join(sample.paths.sample_root, "skewer/trim.log")
-		ngstk.make_dir(os.path.join(sample.paths.sample_root, "skewer/"))
+		skewer_dirpath = os.path.join(sample.paths.sample_root, "skewer")
+		ngstk.make_dir(skewer_dirpath)
+		sample.trimlog = os.path.join(skewer_dirpath, "trim.log")
 		cmd = ngstk.skewer(
 			inputFastq1=sample.fastq1 if sample.paired else sample.fastq,
 			inputFastq2=sample.fastq2 if sample.paired else None,
