@@ -14,7 +14,7 @@ import pypiper
 # Argument Parsing
 # #######################################################################################
 parser = ArgumentParser(description='Pypiper arguments.')
-parser = pypiper.add_pypiper_args(parser, groups=["all"])
+parser = pypiper.add_pypiper_args(parser, all_args=True)
 
 parser.add_argument('-f', dest='filter', action='store_false', default=True)
 parser.add_argument('-d', dest='markDupl', action='store_true', default=False)

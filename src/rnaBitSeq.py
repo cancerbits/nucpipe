@@ -17,7 +17,7 @@ import pypiper
 # #######################################################################################
 parser = ArgumentParser(description='Pypiper arguments.')
 
-parser = pypiper.add_pypiper_args(parser, groups=["all"])
+parser = pypiper.add_pypiper_args(parser, all_args=True)
 
 # Add any pipeline-specific arguments
 
