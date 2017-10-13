@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-
-"""
-Kallisto pipeline
-"""
+""" Kallisto pipeline """
 
 import sys
 from argparse import ArgumentParser
@@ -29,6 +26,7 @@ __email__ = "arendeiro@cemm.oeaw.ac.at"
 __status__ = "Development"
 
 
+
 def main():
 	# Parse command-line arguments
 	parser = ArgumentParser(prog="rnaKallisto", description="Kallisto pipeline")
@@ -43,6 +41,7 @@ def main():
 
 	# Start main function
 	process(sample, pipeline_config, args)
+
 
 
 def arg_parser(parser):
