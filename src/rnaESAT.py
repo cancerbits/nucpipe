@@ -107,7 +107,7 @@ trimmed_fastq = out_fastq_pre + "_R1_trimmed.fastq"
 trimmed_fastq_R2 = out_fastq_pre + "_R2_trimmed.fastq"
 
 pm.run(cmd, trimmed_fastq, 
-	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
+	follow = ngstk.check_trim(trimmed_fastq, args.paired_end, trimmed_fastq_R2,
 		fastqc_folder = os.path.join(param.pipeline_outfolder, "fastqc/")))
 
 

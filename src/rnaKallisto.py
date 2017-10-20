@@ -157,7 +157,7 @@ def process(sample, pipeline_config, args):
 
 
 		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True,
-			follow = ngstk.check_trim(sample.trimmed, sample.trimmed2, sample.paired,
+			follow = ngstk.check_trim(sample.trimmed, sample.paired, sample.trimmed2,
 				fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc/")))
 		if not sample.paired:
 			pm.clean_add(sample.trimmed, conditional=True)
@@ -182,7 +182,7 @@ def process(sample, pipeline_config, args):
 			adapters=pipeline_config.resources.adapters
 		)
 		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True, 
-			follow = ngstk.check_trim(sample.trimmed, sample.trimmed2, sample.paired,
+			follow = ngstk.check_trim(sample.trimmed, sample.paired, sample.trimmed2,
 				fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc/")))
 		if not sample.paired:
 			pm.clean_add(sample.trimmed, conditional=True)
