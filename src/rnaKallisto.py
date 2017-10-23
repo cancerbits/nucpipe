@@ -170,14 +170,14 @@ def process(sample, pipeline_config, args):
 	elif pipeline_config.parameters.trimmer == "skewer":
 		skewer_dirpath = os.path.join(sample.paths.sample_root, "skewer")
 		ngstk.make_dir(skewer_dirpath)
-		sample.trimlog = os.path.join(skewer_dirpath, "trim.log")
+		trimlog = os.path.join(skewer_dirpath, "trim.log")
 		cmd = ngstk.skewer(
 			inputFastq1=sample.fastq1 if sample.paired else sample.fastq,
 			inputFastq2=sample.fastq2 if sample.paired else None,
 			outputPrefix=os.path.join(sample.paths.sample_root, "fastq/", sample.sample_name),
 			outputFastq1=sample.trimmed1 if sample.paired else sample.trimmed,
 			outputFastq2=sample.trimmed2 if sample.paired else None,
-			trimLog=sample.trimlog,
+			log=trimlog,
 			cpus=args.cores,
 			adapters=pipeline_config.resources.adapters
 		)
