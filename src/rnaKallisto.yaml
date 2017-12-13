@@ -1,6 +1,6 @@
 resources:
   genomes: ${GENOMES}
-  adapters: ${RESOURCES}adapters/illumina.fa
+  adapters: ${RESOURCES}/adapters/illumina.fa
 
 tools:
   python: python

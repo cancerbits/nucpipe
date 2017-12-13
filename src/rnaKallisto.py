@@ -152,7 +152,7 @@ def process(sample, pipeline_config, args):
 		cmd += " MINLEN:21"
 
 
-		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True,
+		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True,
 			follow = ngstk.check_trim(sample.trimmed, sample.paired, sample.trimmed2,
 				fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc/")))
 		if not sample.paired:
@@ -177,7 +177,7 @@ def process(sample, pipeline_config, args):
 			cpus=args.cores,
 			adapters=pipeline_config.resources.adapters
 		)
-		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True, 
+		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True,
 			follow = ngstk.check_trim(sample.trimmed, sample.paired, sample.trimmed2,
 				fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc/")))
 		if not sample.paired:
@@ -208,7 +208,7 @@ def process(sample, pipeline_config, args):
 		cmd1 += " {0} {1}".format(inputFastq, inputFastq2)
 	cmd2 = tools.kallisto + " h5dump -o {0} {0}/abundance.h5".format(sample.paths.quant)
 
-	pm.run([cmd1,cmd2], sample.kallistoQuant, shell=True, nofail=True)
+	pm.run([cmd1,cmd2], sample.kallistoQuant, shell=True)
 
 	pm.stop_pipeline()
 	print("Finished processing sample %s." % sample.sample_name)
