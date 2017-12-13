@@ -1,19 +1,15 @@
 #!/usr/bin/env python
 """ Kallisto pipeline """
 
-import sys
 from argparse import ArgumentParser
-import yaml
-import pypiper
 import os
+import sys
 
-try:
-	from pipelines.models import AttributeDict
-	from pipelines import toolkit as tk
-except:
-	sys.path.append(os.path.join(os.path.dirname(__file__), "pipelines"))
-	from looper.models import AttributeDict
-	from pypiper import ngstk as tk
+import yaml
+
+from pep import AttributeDict
+from pypiper import add_pypiper_args, NGSTk, PipelineManager
+
 
 
 __author__ = "Andre Rendeiro"
@@ -31,7 +27,7 @@ def main():
 	# Parse command-line arguments
 	parser = ArgumentParser(prog="rnaKallisto", description="Kallisto pipeline")
 	parser = arg_parser(parser)
-	parser = pypiper.add_pypiper_args(parser, all_args = True)
+	parser = add_pypiper_args(parser, all_args = True)
 	args = parser.parse_args()
 
 	# Read in yaml configs
@@ -81,12 +77,11 @@ def process(sample, pipeline_config, args):
 	# 			raise
 
 	# Start Pypiper object
-	pm = pypiper.PipelineManager("rnaKallisto", sample.paths.sample_root, args=args)
+	pm = PipelineManager("rnaKallisto", sample.paths.sample_root, args=args)
 
 	print "\nPipeline configuration:"
 	print(pm.config)
 	tools = pm.config.tools  # Convenience alias
-	param = pm.config.parameters
 	resources = pm.config.resources
 
 	raw_folder = os.path.join(sample.paths.sample_root, "raw")
@@ -97,7 +92,7 @@ def process(sample, pipeline_config, args):
 		sample.paired = True
 
 	# Create a ngstk object
-	ngstk = pypiper.NGSTk(pm=pm)
+	ngstk = NGSTk(pm=pm)
 
 	# Convert bam to fastq
 	pm.timestamp("Converting to Fastq format")
@@ -172,11 +167,11 @@ def process(sample, pipeline_config, args):
 		ngstk.make_dir(skewer_dirpath)
 		sample.trimlog = os.path.join(skewer_dirpath, "trim.log")
 		cmd = ngstk.skewer(
-			inputFastq1=sample.fastq1 if sample.paired else sample.fastq,
-			inputFastq2=sample.fastq2 if sample.paired else None,
-			outputPrefix=os.path.join(sample.paths.sample_root, "fastq/", sample.sample_name),
-			outputFastq1=sample.trimmed1 if sample.paired else sample.trimmed,
-			outputFastq2=sample.trimmed2 if sample.paired else None,
+			input_fastq1=sample.fastq1 if sample.paired else sample.fastq,
+			input_fastq2=sample.fastq2 if sample.paired else None,
+			output_prefix=os.path.join(sample.paths.sample_root, "fastq/", sample.sample_name),
+			output_fastq1=sample.trimmed1 if sample.paired else sample.trimmed,
+			output_fastq2=sample.trimmed2 if sample.paired else None,
 			log=sample.trimlog,
 			cpus=args.cores,
 			adapters=pipeline_config.resources.adapters
