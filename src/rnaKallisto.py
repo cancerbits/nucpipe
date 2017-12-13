@@ -33,7 +33,8 @@ def main():
 	# Read in yaml configs
 	sample = AttributeDict(yaml.load(open(args.sample_config, "r")))
 	path_conf_file = os.path.join(os.path.dirname(__file__), args.config_file)
-	pipeline_config = AttributeDict(yaml.load(open(path_conf_file), "r"))
+	with open(path_conf_file, 'r') as conf_file:
+		pipeline_config = AttributeDict(yaml.load(conf_file))
 
 	# Start main function
 	process(sample, pipeline_config, args)
