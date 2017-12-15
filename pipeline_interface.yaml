@@ -1,10 +1,8 @@
 protocol_mapping:
-  # TODO: will this work for handling options/flags? (before it was <script> <flags>)
-  # TODO (cont.): whereas now it's <name> <flags>
   RNA-seq: >
-    rnaBitSeq -f;
-    rnaKallisto;
-    rnaTopHat -f
+    rnaBitSeq.py -f;
+    rnaKallisto.py;
+    rnaTopHat.py -f
   SMART:  >
     rnaBitSeq.py -f;
     rnaTopHat.py -f
@@ -14,12 +12,10 @@ protocol_mapping:
   QUANT-SEQ: >
     rnaBitSeq.py -f --quantseq;
     rnaKallisto.py --quantseq
-  # TODO: will this work for handling options/flags? (before it was <script> <flags>)
-  # TODO (cont.): whereas now it's <name> <flags>
-  rnaKallisto: rnaKallisto
-  rnaBitSeq: rnaBitSeq -f
-  rnaTopHat: rnaTopHat -f
-  rnaESAT: rnaESAT
+  rnaKallisto: rnaKallisto.py
+  rnaBitSeq: rnaBitSeq.py -f
+  rnaTopHat: rnaTopHat.py -f
+  rnaESAT: rnaESAT.py
 
 pipelines:
   rnaBitSeq.py:
