@@ -132,7 +132,7 @@ def process(sample, pipeline_config, args):
 	ngstk = NGSTk(pm=pm)
 
 	# Convert bam to fastq
-	pm.timestamp("Converting to Fastq format")
+	pm.timestamp("Converting to Fastq format", checkpoint="standardize_input")
 
 	local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
 	cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, sample.paired, fastq_folder)
@@ -161,7 +161,7 @@ def process(sample, pipeline_config, args):
 	#	pm.clean_add(sample.fastqUnpaired, conditional=True)
 
 	# Trim reads
-	pm.timestamp("Trimming adapters from sample")
+	pm.timestamp("Trimming adapters from sample", checkpoint="trim")
 	if pipeline_config.parameters.trimmer == "trimmomatic":
 
 		inputFastq1 = sample.fastq1 if sample.paired else sample.fastq
@@ -223,8 +223,14 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed1, conditional=True)
 			pm.clean_add(sample.trimmed2, conditional=True)
 
+	pm.timestamp("Performing quality control", checkpoint="quality_control")
+	fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc")
+	perform_quality_control = ngstk.check_trim(
+		sample.trimmed, sample.paired, sample.trimmed2, fastqc_folder=fastqc_folder)
+	perform_quality_control()
+
 	# With kallisto from unmapped reads
-	pm.timestamp("Quantifying read counts with kallisto")
+	pm.timestamp("Quantifying read counts with kallisto", checkpoint="quantify")
 
 	inputFastq = sample.trimmed1 if sample.paired else sample.trimmed
 	inputFastq2 = sample.trimmed1 if sample.paired else None
