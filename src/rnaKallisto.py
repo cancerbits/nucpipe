@@ -2,6 +2,7 @@
 """ Kallisto pipeline """
 
 from argparse import ArgumentParser
+from functools import partial
 import os
 import sys
 
@@ -9,7 +10,6 @@ import yaml
 
 from pep import AttributeDict
 from pypiper import add_pypiper_args, NGSTk, PipelineManager
-
 
 
 __author__ = "Andre Rendeiro"
@@ -23,24 +23,6 @@ __status__ = "Development"
 
 
 
-def main():
-	# Parse command-line arguments
-	parser = ArgumentParser(prog="rnaKallisto", description="Kallisto pipeline")
-	parser = arg_parser(parser)
-	parser = add_pypiper_args(parser, all_args = True)
-	args = parser.parse_args()
-
-	# Read in yaml configs
-	sample = AttributeDict(yaml.load(open(args.sample_config, "r")))
-	path_conf_file = os.path.join(os.path.dirname(__file__), args.config_file)
-	with open(path_conf_file, 'r') as conf_file:
-		pipeline_config = AttributeDict(yaml.load(conf_file))
-
-	# Start main function
-	process(sample, pipeline_config, args)
-
-
-
 def arg_parser(parser):
 	"""
 	Global options for pipeline.
@@ -48,17 +30,66 @@ def arg_parser(parser):
 	parser.add_argument(
 		"-y", "--sample-yaml",
 		dest="sample_config",
-		help="Yaml config file with sample attributes.",
-		type=str
-	)
+		help="Yaml config file with sample attributes.")
 	parser.add_argument(
 		"-qs","--quantseq",
 		dest="quantseq",
 		action="store_true",
 		default=False,
-		help="Enables quantseq specific options"
-	)
+		help="Enables quantseq specific options")
+	parser.add_argument(
+		"--length", 
+		type=int, 
+		help="Estimated fragment length")
+	parser.add_argument(
+		"--sdev", 
+		type=float, 
+		help="Fragment length standard deviation")
+	parser.add_argument(
+		"--n-boot", 
+		type=int, 
+		help="Number of bootstrap samples to use for quantification error "
+			 "estimation. This should be a nonnegative integer; 0 indicates "
+			 "no error estimation but results in faster runtime.")
 	return parser
+
+
+
+def _parse_param(p, cmdl_opts, pipe_opts, on_missing=None):
+	"""
+	Simple utility for parsing pipeline parameters.
+	
+	A common use case that arises is alternate ways of parameter specification. 
+	Typically, some locations are intended to be more permanent/static than 
+	others, and/or to serve as a place to store record parameters that are 
+	less frequently desired/needed to be changed. This facilitates parsing 
+	such parameters, preferring command line 
+	
+	:param Mapping args: first map from option name to argument value (e.g., 
+		from the command line) to prioritize over the second such collection 
+		(e.g., pipeline configuration).
+	:param Mapping params: parameters that are intended to always be present, 
+		e.g. the space of adjustable options/parameters that are implied by 
+		a pipeline configuration file's 'parameters' section
+	:param function(str) -> object on_missing: action to take if the parameter 
+		requested is found in neither option-to-argument mapping. If this is 
+		unspecified, a KeyError will be raised. Otherwise, this function 
+		will be called, and it must accept an argument (i.e., the requested 
+		parameter's name) and should return a value.
+	:return object: the value for the given parameter
+	:raise KeyError: if requested parameter is unavailable in either mapping 
+		provided and there's no provision for action to take in this case.
+	"""
+	try:
+		return cmdl_opts[p]
+	except KeyError:
+		try:
+			return pipe_opts[p]
+		except KeyError:
+			if on_missing is None:
+				raise
+			return on_missing(p)
+
 
 
 def process(sample, pipeline_config, args):
@@ -191,17 +222,21 @@ def process(sample, pipeline_config, args):
 
 	inputFastq = sample.trimmed1 if sample.paired else sample.trimmed
 	inputFastq2 = sample.trimmed1 if sample.paired else None
-	transcriptomeIndex = os.path.join(	pm.config.resources.genomes, 
+	transcriptome_index = os.path.join(	pm.config.resources.genomes, 
 										sample.transcriptome,
 										"indexed_kallisto",
 										sample.transcriptome + "_kallisto_index.idx")
 
-	bval = 0 # Number of bootstrap samples (default: 0)
-	size = 50 # Estimated average fragment length
-	sdev = 20 # Estimated standard deviation of fragment length
+	cmdl_opts = vars(args)
+	pipe_opts = pipeline_config.parameters
+	getopt = partial(_parse_param, cmdl_opts=cmdl_opts, pipe_opts=pipe_opts)
+	n_boot = getopt("n_boot")
+	size = getopt("length")
+	sdev = getopt("sdev")
+
 	sample.paths.quant = os.path.join(sample.paths.sample_root, "kallisto")
 	sample.kallistoQuant = os.path.join(sample.paths.quant,"abundance.h5")
-	cmd1 = tools.kallisto + " quant -b {0} -l {1} -s {2} -i {3} -o {4} -t {5}".format(bval, size, sdev, transcriptomeIndex, sample.paths.quant, args.cores)
+	cmd1 = tools.kallisto + " quant -b {0} -l {1} -s {2} -i {3} -o {4} -t {5}".format(n_boot, size, sdev, transcriptome_index, sample.paths.quant, args.cores)
 	if not sample.paired:
 		cmd1 += " --single {0}".format(inputFastq)
 	else:
@@ -212,6 +247,29 @@ def process(sample, pipeline_config, args):
 
 	pm.stop_pipeline()
 	print("Finished processing sample %s." % sample.sample_name)
+
+
+
+def main():
+	""" Run the pipeline. """
+	
+	# Parse command-line arguments.
+	parser = ArgumentParser(prog="rnaKallisto", description="Kallisto pipeline")
+	parser = arg_parser(parser)
+	parser = add_pypiper_args(parser, all_args=True)
+	args = parser.parse_args()
+
+	# Read in yaml configs
+	with open(args.sample_config, 'r') as conf:
+		sample = AttributeDict(yaml.load(conf))
+	
+	path_conf_file = os.path.join(os.path.dirname(__file__), args.config_file)
+	with open(path_conf_file, 'r') as conf_file:
+		pipeline_config = AttributeDict(yaml.load(conf_file))
+
+	# Start main function
+	process(sample, pipeline_config, args)
+
 
 
 if __name__ == '__main__':
