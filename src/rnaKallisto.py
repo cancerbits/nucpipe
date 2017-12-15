@@ -55,7 +55,7 @@ def arg_parser(parser):
 
 
 
-def _parse_param(p, cmdl_opts, pipe_opts, on_missing=None):
+def _parse_param(p, cmdl_opts, pipe_opts, use_null=False, on_error=None):
 	"""
 	Simple utility for parsing pipeline parameters.
 	
@@ -71,11 +71,14 @@ def _parse_param(p, cmdl_opts, pipe_opts, on_missing=None):
 	:param Mapping params: parameters that are intended to always be present, 
 		e.g. the space of adjustable options/parameters that are implied by 
 		a pipeline configuration file's 'parameters' section
-	:param function(str) -> object on_missing: action to take if the parameter 
+	:param function(str) -> object on_error: action to take if the parameter 
 		requested is found in neither option-to-argument mapping. If this is 
 		unspecified, a KeyError will be raised. Otherwise, this function 
 		will be called, and it must accept an argument (i.e., the requested 
 		parameter's name) and should return a value.
+	:param bool use_null: Whether a null should be returned if the requested
+		parameter is undefined in either mapping. This is favored over
+		the in-case-of-error function if both are provided.
 	:return object: the value for the given parameter
 	:raise KeyError: if requested parameter is unavailable in either mapping 
 		provided and there's no provision for action to take in this case.
@@ -86,9 +89,11 @@ def _parse_param(p, cmdl_opts, pipe_opts, on_missing=None):
 		try:
 			return pipe_opts[p]
 		except KeyError:
-			if on_missing is None:
+			if use_null:
+				return None
+			elif on_error is None:
 				raise
-			return on_missing(p)
+			return on_error(p)
 
 
 
@@ -177,6 +182,7 @@ def process(sample, pipeline_config, args):
 			cmd += " {0} {1} {2}".format(outputFastq1unpaired, outputFastq2, outputFastq2unpaired)
 		if args.quantseq: cmd += " HEADCROP:6"
 		cmd += " ILLUMINACLIP:" + resources.adapters + ":2:10:4:1:true"
+		# TODO: generalize the path to the adapters.
 		if args.quantseq: cmd += " ILLUMINACLIP:" + "/data/groups/lab_bsf/resources/trimmomatic_adapters/PolyA-SE.fa" + ":2:30:5:1:true"
 		cmd += " SLIDINGWINDOW:4:1"
 		cmd += " MAXINFO:16:0.40"
@@ -227,21 +233,29 @@ def process(sample, pipeline_config, args):
 										"indexed_kallisto",
 										sample.transcriptome + "_kallisto_index.idx")
 
+	# Get the parameterizable options for the pipeline.
 	cmdl_opts = vars(args)
 	pipe_opts = pipeline_config.parameters
 	getopt = partial(_parse_param, cmdl_opts=cmdl_opts, pipe_opts=pipe_opts)
 	n_boot = getopt("n_boot")
-	size = getopt("length")
-	sdev = getopt("sdev")
+	size = getopt("length", use_null=True)
+	sdev = getopt("sdev", use_null=True)
 
 	sample.paths.quant = os.path.join(sample.paths.sample_root, "kallisto")
 	sample.kallistoQuant = os.path.join(sample.paths.quant,"abundance.h5")
-	cmd1 = tools.kallisto + " quant -b {0} -l {1} -s {2} -i {3} -o {4} -t {5}".format(n_boot, size, sdev, transcriptome_index, sample.paths.quant, args.cores)
+	cmd1 = tools.kallisto + " quant -b {boot} -i {index} -o {outdir} -t {cores}".\
+			format(boot=n_boot, index=transcriptome_index, outdir=sample.paths.quant, cores=args.cores)
+	if size is not None:
+		cmd1 += " -l {}".format(size)
+	if sdev is not None:
+		cmd1 += " -s {}".format(sdev)
 	if not sample.paired:
 		cmd1 += " --single {0}".format(inputFastq)
 	else:
 		cmd1 += " {0} {1}".format(inputFastq, inputFastq2)
-	cmd2 = tools.kallisto + " h5dump -o {0} {0}/abundance.h5".format(sample.paths.quant)
+	abundance_outfile_path = os.path.join(sample.paths.quant, "abundance.h5")
+	cmd2 = tools.kallisto + " h5dump -o {} {}".format(
+			sample.paths.quant, abundance_outfile_path)
 
 	pm.run([cmd1,cmd2], sample.kallistoQuant, shell=True)
 

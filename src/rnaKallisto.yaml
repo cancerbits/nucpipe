@@ -13,6 +13,4 @@ tools:
 parameters:
   # which trimmer to use: choose between ["trimmomatic", "skewer"]
   trimmer: "skewer"
-  length: 50
-  sdev: 20
   n_boot: 0
