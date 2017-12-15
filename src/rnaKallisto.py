@@ -246,19 +246,26 @@ def process(sample, pipeline_config, args):
 	n_boot = getopt("n_boot")
 	size = getopt("length", use_null=True)
 	sdev = getopt("sdev", use_null=True)
+	if not sample.paired and (size is None or sdev is None):
+		raise ValueError("For single-end data, estimates for mean and standard deviation of fragment size are required.")
 
 	sample.paths.quant = os.path.join(sample.paths.sample_root, "kallisto")
 	sample.kallistoQuant = os.path.join(sample.paths.quant,"abundance.h5")
 	cmd1 = tools.kallisto + " quant -b {boot} -i {index} -o {outdir} -t {cores}".\
 			format(boot=n_boot, index=transcriptome_index, outdir=sample.paths.quant, cores=args.cores)
+
+	# Add fragment size parameters.
 	if size is not None:
 		cmd1 += " -l {}".format(size)
 	if sdev is not None:
 		cmd1 += " -s {}".format(sdev)
+
+	# Point to the data file(s).
 	if not sample.paired:
 		cmd1 += " --single {0}".format(inputFastq)
 	else:
 		cmd1 += " {0} {1}".format(inputFastq, inputFastq2)
+
 	abundance_outfile_path = os.path.join(sample.paths.quant, "abundance.h5")
 	cmd2 = tools.kallisto + " h5dump -o {} {}".format(
 			sample.paths.quant, abundance_outfile_path)
