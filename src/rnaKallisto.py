@@ -202,8 +202,8 @@ def process(sample, pipeline_config, args):
 	pipe_opts = pipeline_config.parameters
 	getopt = partial(get_parameter, param_pools=[sample, cmdl_opts, pipe_opts])
 	n_boot = getopt("n_boot")
-	size = getopt("fragment_length", use_null=True)
-	sdev = getopt("fragment_length_sdev", use_null=True)
+	size = getopt("fragment_length", on_missing=None, error=False)
+	sdev = getopt("fragment_length_sdev", on_missing=None, error=False)
 	if not sample.paired and (size is None or sdev is None):
 		raise ValueError("For single-end data, estimates for mean and standard deviation of fragment size are required.")
 
