@@ -14,3 +14,5 @@ parameters:
   # which trimmer to use: choose between ["trimmomatic", "skewer"]
   trimmer: "skewer"
   n_boot: 0
+  fragment_length: 300
+  fragment_lentgh_sdev: 20

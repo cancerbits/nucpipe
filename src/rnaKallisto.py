@@ -9,7 +9,7 @@ import sys
 import yaml
 
 from pep import AttributeDict
-from pypiper import add_pypiper_args, NGSTk, PipelineManager
+from pypiper import add_pypiper_args, get_parameter, NGSTk, PipelineManager
 
 
 __author__ = "Andre Rendeiro"
@@ -38,13 +38,13 @@ def arg_parser(parser):
 		default=False,
 		help="Enables quantseq specific options")
 	parser.add_argument(
-		"--length", 
+		"--fragment-length",
 		type=int, 
-		help="Estimated fragment length")
+		help="Estimated mean fragment length")
 	parser.add_argument(
-		"--sdev", 
+		"--fragment-length-sdev",
 		type=float, 
-		help="Fragment length standard deviation")
+		help="Estimated fragment length standard deviation")
 	parser.add_argument(
 		"--n-boot", 
 		type=int, 
@@ -52,48 +52,6 @@ def arg_parser(parser):
 			 "estimation. This should be a nonnegative integer; 0 indicates "
 			 "no error estimation but results in faster runtime.")
 	return parser
-
-
-
-def _parse_param(p, cmdl_opts, pipe_opts, use_null=False, on_error=None):
-	"""
-	Simple utility for parsing pipeline parameters.
-	
-	A common use case that arises is alternate ways of parameter specification. 
-	Typically, some locations are intended to be more permanent/static than 
-	others, and/or to serve as a place to store record parameters that are 
-	less frequently desired/needed to be changed. This facilitates parsing 
-	such parameters, preferring command line 
-	
-	:param Mapping args: first map from option name to argument value (e.g., 
-		from the command line) to prioritize over the second such collection 
-		(e.g., pipeline configuration).
-	:param Mapping params: parameters that are intended to always be present, 
-		e.g. the space of adjustable options/parameters that are implied by 
-		a pipeline configuration file's 'parameters' section
-	:param function(str) -> object on_error: action to take if the parameter 
-		requested is found in neither option-to-argument mapping. If this is 
-		unspecified, a KeyError will be raised. Otherwise, this function 
-		will be called, and it must accept an argument (i.e., the requested 
-		parameter's name) and should return a value.
-	:param bool use_null: Whether a null should be returned if the requested
-		parameter is undefined in either mapping. This is favored over
-		the in-case-of-error function if both are provided.
-	:return object: the value for the given parameter
-	:raise KeyError: if requested parameter is unavailable in either mapping 
-		provided and there's no provision for action to take in this case.
-	"""
-	try:
-		return cmdl_opts[p]
-	except KeyError:
-		try:
-			return pipe_opts[p]
-		except KeyError:
-			if use_null:
-				return None
-			elif on_error is None:
-				raise
-			return on_error(p)
 
 
 
@@ -242,10 +200,10 @@ def process(sample, pipeline_config, args):
 	# Get the parameterizable options for the pipeline.
 	cmdl_opts = vars(args)
 	pipe_opts = pipeline_config.parameters
-	getopt = partial(_parse_param, cmdl_opts=cmdl_opts, pipe_opts=pipe_opts)
+	getopt = partial(get_parameter, param_pools=[sample, cmdl_opts, pipe_opts])
 	n_boot = getopt("n_boot")
-	size = getopt("length", use_null=True)
-	sdev = getopt("sdev", use_null=True)
+	size = getopt("fragment_length", use_null=True)
+	sdev = getopt("fragment_length_sdev", use_null=True)
 	if not sample.paired and (size is None or sdev is None):
 		raise ValueError("For single-end data, estimates for mean and standard deviation of fragment size are required.")
 
