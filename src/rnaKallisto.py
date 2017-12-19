@@ -198,7 +198,11 @@ def process(sample, pipeline_config, args):
 										sample.transcriptome + "_kallisto_index.idx")
 
 	# Get the parameterizable options for the pipeline.
-	cmdl_opts = vars(args)
+	# Exclude null values from the namespace, as these suggest that the option
+	# was not used. Note that this may not work smoothly for flag-like options
+	# and for options for which the default is non-null (e.g., 0 automatically
+	# for a numeric value. Such cases would need to be handled separately.)
+	cmdl_opts = {opt: arg for opt, arg in vars(args).items() if arg is not None}
 	pipe_opts = pipeline_config.parameters
 	getopt = partial(get_parameter, param_pools=[sample, cmdl_opts, pipe_opts])
 	n_boot = getopt("n_boot")
