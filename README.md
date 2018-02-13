@@ -23,8 +23,8 @@ pip install --user https://github.com/databio/pararead/zipball/master
 **Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie instructions](https://github.com/databio/refgenie#indexing-your-own-reference-genome)).
 
 **Clone the pipeline**. Clone this repository using one of these methods:
-- using SSH: `git clone git@github.com:epigen/rnapipe.git`
-- using HTTPS: `git clone https://github.com/epigen/rnapipe.git`
+- using SSH: `git clone git@github.com:databio/rnapipe.git`
+- using HTTPS: `git clone https://github.com/databio/rnapipe.git`
 
 ## Configuring
 
