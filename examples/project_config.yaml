@@ -2,7 +2,7 @@
 
 metadata:
   output_dir: ${HOME}/looper_test
-  pipelines_dir: ${CODEBASE}rnapipe/pipeline_interface.yaml
+  pipeline_interfaces: ${CODEBASE}rnapipe/pipeline_interface.yaml
   sample_annotation: example.csv
 
 implied_columns:
