@@ -1,22 +1,15 @@
 #!/usr/bin/env python
+""" Kallisto pipeline """
 
-"""
-QUANT-seq pipeline
-"""
-
-import sys
 from argparse import ArgumentParser
-import yaml
-import pypiper
+from functools import partial
 import os
+import sys
 
-try:
-	from pipelines.models import AttributeDict
-	from pipelines import toolkit as tk
-except:
-	sys.path.append(os.path.join(os.path.dirname(__file__), "pipelines"))
-	from looper.models import AttributeDict
-	from pypiper import ngstk as tk
+import yaml
+
+from pep import AttributeDict
+from pypiper import add_pypiper_args, get_parameter, NGSTk, PipelineManager
 
 
 __author__ = "Andre Rendeiro"
@@ -29,23 +22,6 @@ __email__ = "arendeiro@cemm.oeaw.ac.at"
 __status__ = "Development"
 
 
-def main():
-	# Parse command-line arguments
-	parser = ArgumentParser(
-		prog="rnaKallisto",
-		description="Kallisto pipeline."
-	)
-	parser = arg_parser(parser)
-	parser = pypiper.add_pypiper_args(parser, all_args = True)
-	args = parser.parse_args()
-
-	# Read in yaml configs
-	sample = AttributeDict(yaml.load(open(args.sample_config, "r")))
-	pipeline_config = AttributeDict(yaml.load(open(os.path.join(os.path.dirname(__file__), args.config_file), "r")))
-
-	# Start main function
-	process(sample, pipeline_config, args)
-
 
 def arg_parser(parser):
 	"""
@@ -54,17 +30,29 @@ def arg_parser(parser):
 	parser.add_argument(
 		"-y", "--sample-yaml",
 		dest="sample_config",
-		help="Yaml config file with sample attributes.",
-		type=str
-	)
+		help="Yaml config file with sample attributes.")
 	parser.add_argument(
 		"-qs","--quantseq",
 		dest="quantseq",
 		action="store_true",
 		default=False,
-		help="Enables quantseq specific options"
-	)
+		help="Enables quantseq specific options")
+	parser.add_argument(
+		"--fragment-length",
+		type=int, 
+		help="Estimated mean fragment length")
+	parser.add_argument(
+		"--fragment-length-sdev",
+		type=float, 
+		help="Estimated fragment length standard deviation")
+	parser.add_argument(
+		"--n-boot", 
+		type=int, 
+		help="Number of bootstrap samples to use for quantification error "
+			 "estimation. This should be a nonnegative integer; 0 indicates "
+			 "no error estimation but results in faster runtime.")
 	return parser
+
 
 
 def process(sample, pipeline_config, args):
@@ -84,35 +72,25 @@ def process(sample, pipeline_config, args):
 	# 			raise
 
 	# Start Pypiper object
-	pm = pypiper.PipelineManager("rnaKallisto", sample.paths.sample_root, args=args)
+	pm = PipelineManager("rnaKallisto", sample.paths.sample_root, args=args)
 
 	print "\nPipeline configuration:"
 	print(pm.config)
 	tools = pm.config.tools  # Convenience alias
-	param = pm.config.parameters
 	resources = pm.config.resources
 
 	raw_folder = os.path.join(sample.paths.sample_root, "raw")
 	fastq_folder = os.path.join(sample.paths.sample_root, "fastq")
 
 	sample.paired = False
-	if args.single_or_paired == "paired": sample.paired = True
+	if args.single_or_paired == "paired":
+		sample.paired = True
 
 	# Create a ngstk object
-	ngstk = pypiper.NGSTk(pm=pm)
-
-	# Merge Bam files if more than one technical replicate
-	if len(sample.data_path.split(" ")) > 1:
-		pm.timestamp("Merging bam files from replicates")
-		cmd = tk.mergeBams(
-			inputBams=sample.data_path.split(" "),  # this is a list of sample paths
-			outputBam=sample.unmapped
-		)
-		pm.run(cmd, sample.unmapped, shell=True)
-		sample.data_path = sample.unmapped
+	ngstk = NGSTk(pm=pm)
 
 	# Convert bam to fastq
-	pm.timestamp("Converting to Fastq format")
+	pm.timestamp("Converting to Fastq format", checkpoint="standardize_input")
 
 	local_input_files = ngstk.merge_or_link([args.input, args.input2], raw_folder, args.sample_name)
 	cmd, out_fastq_pre, unaligned_fastq = ngstk.input_to_fastq(local_input_files, args.sample_name, sample.paired, fastq_folder)
@@ -131,7 +109,7 @@ def process(sample, pipeline_config, args):
 	sample.trimmed1 = out_fastq_pre + "_R1_trimmed.fastq" if sample.paired else None
 	sample.trimmed1Unpaired = out_fastq_pre + "_R1_unpaired.fastq" if sample.paired else None
 	sample.trimmed2 = out_fastq_pre + "_R2_trimmed.fastq" if sample.paired else None
-	sample.trimmed2Unpaired + "_R2_unpaired.fastq" if sample.paired else None
+	sample.trimmed2Unpaired = out_fastq_pre + "_R2_unpaired.fastq" if sample.paired else None
 
 	#if not sample.paired:
 	#	pm.clean_add(sample.fastq, conditional=True)
@@ -141,7 +119,7 @@ def process(sample, pipeline_config, args):
 	#	pm.clean_add(sample.fastqUnpaired, conditional=True)
 
 	# Trim reads
-	pm.timestamp("Trimming adapters from sample")
+	pm.timestamp("Trimming adapters from sample", checkpoint="trim")
 	if pipeline_config.parameters.trimmer == "trimmomatic":
 
 		inputFastq1 = sample.fastq1 if sample.paired else sample.fastq
@@ -162,14 +140,15 @@ def process(sample, pipeline_config, args):
 			cmd += " {0} {1} {2}".format(outputFastq1unpaired, outputFastq2, outputFastq2unpaired)
 		if args.quantseq: cmd += " HEADCROP:6"
 		cmd += " ILLUMINACLIP:" + resources.adapters + ":2:10:4:1:true"
+		# TODO: generalize the path to the adapters.
 		if args.quantseq: cmd += " ILLUMINACLIP:" + "/data/groups/lab_bsf/resources/trimmomatic_adapters/PolyA-SE.fa" + ":2:30:5:1:true"
 		cmd += " SLIDINGWINDOW:4:1"
 		cmd += " MAXINFO:16:0.40"
 		cmd += " MINLEN:21"
 
 
-		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True,
-			follow = ngstk.check_trim(sample.trimmed, sample.trimmed2, sample.paired,
+		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True,
+			follow = ngstk.check_trim(sample.trimmed, sample.paired, sample.trimmed2,
 				fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc/")))
 		if not sample.paired:
 			pm.clean_add(sample.trimmed, conditional=True)
@@ -180,20 +159,21 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed2Unpaired, conditional=True)
 
 	elif pipeline_config.parameters.trimmer == "skewer":
-		sample.trimlog = os.path.join(sample.paths.sample_root, "skewer/trim.log")
-		ngstk.make_dir(os.path.join(sample.paths.sample_root, "skewer/"))
+		skewer_dirpath = os.path.join(sample.paths.sample_root, "skewer")
+		ngstk.make_dir(skewer_dirpath)
+		sample.trimlog = os.path.join(skewer_dirpath, "trim.log")
 		cmd = ngstk.skewer(
-			inputFastq1=sample.fastq1 if sample.paired else sample.fastq,
-			inputFastq2=sample.fastq2 if sample.paired else None,
-			outputPrefix=os.path.join(sample.paths.sample_root, "fastq/", sample.sample_name),
-			outputFastq1=sample.trimmed1 if sample.paired else sample.trimmed,
-			outputFastq2=sample.trimmed2 if sample.paired else None,
-			trimLog=sample.trimlog,
+			input_fastq1=sample.fastq1 if sample.paired else sample.fastq,
+			input_fastq2=sample.fastq2 if sample.paired else None,
+			output_prefix=os.path.join(sample.paths.sample_root, "fastq/", sample.sample_name),
+			output_fastq1=sample.trimmed1 if sample.paired else sample.trimmed,
+			output_fastq2=sample.trimmed2 if sample.paired else None,
+			log=sample.trimlog,
 			cpus=args.cores,
 			adapters=pipeline_config.resources.adapters
 		)
-		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True, nofail=True, 
-			follow = ngstk.check_trim(sample.trimmed, sample.trimmed2, sample.paired,
+		pm.run(cmd, sample.trimmed1 if sample.paired else sample.trimmed, shell=True,
+			follow = ngstk.check_trim(sample.trimmed, sample.paired, sample.trimmed2,
 				fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc/")))
 		if not sample.paired:
 			pm.clean_add(sample.trimmed, conditional=True)
@@ -201,32 +181,84 @@ def process(sample, pipeline_config, args):
 			pm.clean_add(sample.trimmed1, conditional=True)
 			pm.clean_add(sample.trimmed2, conditional=True)
 
+	pm.timestamp("Performing quality control", checkpoint="quality_control")
+	fastqc_folder = os.path.join(sample.paths.sample_root, "fastqc")
+	perform_quality_control = ngstk.check_trim(
+		sample.trimmed, sample.paired, sample.trimmed2, fastqc_folder=fastqc_folder)
+	perform_quality_control()
+
 	# With kallisto from unmapped reads
-	pm.timestamp("Quantifying read counts with kallisto")
+	pm.timestamp("Quantifying read counts with kallisto", checkpoint="quantify")
 
 	inputFastq = sample.trimmed1 if sample.paired else sample.trimmed
 	inputFastq2 = sample.trimmed1 if sample.paired else None
-	transcriptomeIndex = os.path.join(	pm.config.resources.genomes, 
+	transcriptome_index = os.path.join(	pm.config.resources.genomes, 
 										sample.transcriptome,
 										"indexed_kallisto",
 										sample.transcriptome + "_kallisto_index.idx")
 
-	bval = 0 # Number of bootstrap samples (default: 0)
-	size = 50 # Estimated average fragment length
-	sdev = 20 # Estimated standard deviation of fragment length
+	# Get the parameterizable options for the pipeline.
+	# Exclude null values from the namespace, as these suggest that the option
+	# was not used. Note that this may not work smoothly for flag-like options
+	# and for options for which the default is non-null (e.g., 0 automatically
+	# for a numeric value. Such cases would need to be handled separately.)
+	cmdl_opts = {opt: arg for opt, arg in vars(args).items() if arg is not None}
+	pipe_opts = pipeline_config.parameters
+	getopt = partial(get_parameter, param_pools=[sample, cmdl_opts, pipe_opts])
+	n_boot = getopt("n_boot")
+	size = getopt("fragment_length", on_missing=None, error=False)
+	sdev = getopt("fragment_length_sdev", on_missing=None, error=False)
+	if not sample.paired and (size is None or sdev is None):
+		raise ValueError("For single-end data, estimates for mean and standard deviation of fragment size are required.")
+
 	sample.paths.quant = os.path.join(sample.paths.sample_root, "kallisto")
 	sample.kallistoQuant = os.path.join(sample.paths.quant,"abundance.h5")
-	cmd1 = tools.kallisto + " quant -b {0} -l {1} -s {2} -i {3} -o {4} -t {5}".format(bval, size, sdev, transcriptomeIndex, sample.paths.quant, args.cores)
+	cmd1 = tools.kallisto + " quant -b {boot} -i {index} -o {outdir} -t {cores}".\
+			format(boot=n_boot, index=transcriptome_index, outdir=sample.paths.quant, cores=args.cores)
+
+	# Add fragment size parameters.
+	if size is not None:
+		cmd1 += " -l {}".format(size)
+	if sdev is not None:
+		cmd1 += " -s {}".format(sdev)
+
+	# Point to the data file(s).
 	if not sample.paired:
 		cmd1 += " --single {0}".format(inputFastq)
 	else:
 		cmd1 += " {0} {1}".format(inputFastq, inputFastq2)
-	cmd2 = tools.kallisto + " h5dump -o {0} {0}/abundance.h5".format(sample.paths.quant)
 
-	pm.run([cmd1,cmd2], sample.kallistoQuant, shell=True, nofail=True)
+	abundance_outfile_path = os.path.join(sample.paths.quant, "abundance.h5")
+	cmd2 = tools.kallisto + " h5dump -o {} {}".format(
+			sample.paths.quant, abundance_outfile_path)
+
+	pm.run([cmd1,cmd2], sample.kallistoQuant, shell=True)
 
 	pm.stop_pipeline()
 	print("Finished processing sample %s." % sample.sample_name)
+
+
+
+def main():
+	""" Run the pipeline. """
+	
+	# Parse command-line arguments.
+	parser = ArgumentParser(prog="rnaKallisto", description="Kallisto pipeline")
+	parser = arg_parser(parser)
+	parser = add_pypiper_args(parser, all_args=True)
+	args = parser.parse_args()
+
+	# Read in yaml configs
+	with open(args.sample_config, 'r') as conf:
+		sample = AttributeDict(yaml.load(conf))
+	
+	path_conf_file = os.path.join(os.path.dirname(__file__), args.config_file)
+	with open(path_conf_file, 'r') as conf_file:
+		pipeline_config = AttributeDict(yaml.load(conf_file))
+
+	# Start main function
+	process(sample, pipeline_config, args)
+
 
 
 if __name__ == '__main__':

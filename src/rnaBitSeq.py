@@ -17,7 +17,7 @@ import pypiper
 # #######################################################################################
 parser = ArgumentParser(description='Pypiper arguments.')
 
-parser = pypiper.add_pypiper_args(parser, groups=["all"])
+parser = pypiper.add_pypiper_args(parser, all_args=True)
 
 # Add any pipeline-specific arguments
 
@@ -135,7 +135,7 @@ trimmed_fastq_R2 = out_fastq_pre + "_R2_trimmed.fastq"
 #	follow = lambda: pm.report_result("Trimmed_reads", ngstk.count_reads(trimmed_fastq,args.paired_end)))
 
 pm.run(cmd, trimmed_fastq, 
-	follow = ngstk.check_trim(trimmed_fastq, trimmed_fastq_R2, args.paired_end,
+	follow = ngstk.check_trim(trimmed_fastq, args.paired_end, trimmed_fastq_R2,
 		fastqc_folder = os.path.join(param.pipeline_outfolder, "fastqc/")))
 
 

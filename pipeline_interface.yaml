@@ -1,6 +1,7 @@
 protocol_mapping:
   RNA-seq: >
     rnaBitSeq.py -f;
+    rnaKallisto.py;
     rnaTopHat.py -f
   SMART:  >
     rnaBitSeq.py -f;
@@ -62,7 +63,7 @@ pipelines:
         file_size: "0"
         cores: "2"
         mem: "60000"
-        time: "10-00:00:00"
+        time: "7-00:00:00"
 
   rnaESAT.py:
     name: rnaESAT
@@ -93,6 +94,8 @@ pipelines:
       "--sample-name": sample_name
       "--input": data_source
       "--single-or-paired": read_type
+    optional_arguments:
+      "--input2": read2
     resources:
       default:
         cores: "2"

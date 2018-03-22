@@ -13,8 +13,8 @@ Description pending.
 **Prerequisite python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
 
 ```
-pip install --user https://github.com/epigen/pypiper/zipball/master
-pip install --user https://github.com/epigen/looper/zipball/master
+pip install --user https://github.com/databio/pypiper/zipball/master
+pip install --user https://github.com/pepkit/looper/zipball/master
 pip install --user https://github.com/databio/pararead/zipball/master
 ```
 
@@ -23,8 +23,8 @@ pip install --user https://github.com/databio/pararead/zipball/master
 **Genome resources**. This pipeline requires genome assemblies produced by [refgenie](https://github.com/databio/refgenie). You may [download pre-indexed references](http://cloud.databio.org/refgenomes) or you may index your own (see [refgenie instructions](https://github.com/databio/refgenie#indexing-your-own-reference-genome)).
 
 **Clone the pipeline**. Clone this repository using one of these methods:
-- using SSH: `git clone git@github.com:epigen/rnapipe.git`
-- using HTTPS: `git clone https://github.com/epigen/rnapipe.git`
+- using SSH: `git clone git@github.com:databio/rnapipe.git`
+- using HTTPS: `git clone https://github.com/databio/rnapipe.git`
 
 ## Configuring
 
