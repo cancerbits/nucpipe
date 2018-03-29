@@ -8,7 +8,7 @@ import sys
 
 import yaml
 
-from pep import AttributeDict
+from peppy import AttributeDict
 from pypiper import add_pypiper_args, get_parameter, NGSTk, PipelineManager
 
 
