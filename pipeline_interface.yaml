@@ -96,8 +96,8 @@ pipelines:
       "--single-or-paired": read_type
     optional_arguments:
       "--input2": read2
-      "--fragment_length": fragment_length
-      "--fragment_length_sdev": fragment_length_sdev
+      "--fragment-length": fragment_length
+      "--fragment-length-sdev": fragment_length_sdev
     resources:
       default:
         cores: "2"
