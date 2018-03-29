@@ -8,6 +8,15 @@ These features are explained in more detail later in this README.
 
 Description pending.
 
+## Quick start
+
+If your system has everything installed, run the examples like this:
+
+```
+cd examples
+looper run test_config.yaml -d
+```
+
 ## Installing
 
 **Prerequisite python packages**. This pipeline uses [pypiper](https://github.com/epigen/pypiper) to run a single sample, [looper](https://github.com/epigen/looper) to handle multi-sample projects (for either local or cluster computation), and [pararead](https://github.com/databio/pararead) for parallel processing sequence reads. You can do a user-specific install of these like this:
