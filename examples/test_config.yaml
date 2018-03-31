@@ -11,11 +11,12 @@ implied_columns:
       transcriptome: hg38_cdna
     "Mus musculus":
       transcriptome: mm10_cdna
-      library: rnaKallisto
+      protocol: rnaKallisto
 
 derived_columns: [data_source]
 
 data_sources:
+  #SRA: "/home/vr/code/rnapipe/examples/{sample_name}.bam"
   SRA: "{sample_name}.bam"
 
 pipeline_args:
