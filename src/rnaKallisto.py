@@ -216,15 +216,16 @@ def process(sample, pipeline_config, args):
 	cmd1 = tools.kallisto + " quant -b {boot} -i {index} -o {outdir} -t {cores}".\
 			format(boot=n_boot, index=transcriptome_index, outdir=sample.paths.quant, cores=args.cores)
 
-	# Add fragment size parameters.
-	if size is not None:
-		cmd1 += " -l {}".format(size)
-	if sdev is not None:
-		cmd1 += " -s {}".format(sdev)
-
+	
 	# Point to the data file(s).
 	if not sample.paired:
 		cmd1 += " --single {0}".format(inputFastq)
+		# Add fragment size parameters.
+		if size is not None:
+			cmd1 += " -l {0}".format(size)
+		if sdev is not None:
+			cmd1 += " -s {0}".format(sdev)
+
 	else:
 		cmd1 += " {0} {1}".format(inputFastq, inputFastq2)
 
@@ -240,8 +241,6 @@ def process(sample, pipeline_config, args):
 
 
 def main():
-	""" Run the pipeline. """
-	
 	# Parse command-line arguments.
 	parser = ArgumentParser(prog="rnaKallisto", description="Kallisto pipeline")
 	parser = arg_parser(parser)

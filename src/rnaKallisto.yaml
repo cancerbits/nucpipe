@@ -1,6 +1,7 @@
 resources:
   genomes: ${GENOMES}
-  adapters: ${RESOURCES}/adapters/illumina.fa
+  # adapters: ${RESOURCES}/adapters/illumina.fa
+  adapters: ${CODEBASE}/none_adapters.fa
 
 tools:
   python: python
@@ -15,4 +16,4 @@ parameters:
   trimmer: "skewer"
   n_boot: 0
   fragment_length: 300
-  fragment_lentgh_sdev: 20
+  fragment_length_sdev: 20
