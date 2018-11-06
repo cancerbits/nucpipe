@@ -51,6 +51,12 @@ def arg_parser(parser):
 		help="Number of bootstrap samples to use for quantification error "
 			 "estimation. This should be a nonnegative integer; 0 indicates "
 			 "no error estimation but results in faster runtime.")
+	parser.add_argument(
+		"--single-end-defaults",
+		action="store_true",
+		dest="single_end_defaults",
+		help="Use the default fragment length and fragment length standard deviation "
+			 "specified in the Yaml config file.")
 	return parser
 
 
@@ -209,7 +215,11 @@ def process(sample, pipeline_config, args):
 	size = getopt("fragment_length", on_missing=None, error=False)
 	sdev = getopt("fragment_length_sdev", on_missing=None, error=False)
 	if not sample.paired and (size is None or sdev is None):
-		raise ValueError("For single-end data, estimates for mean and standard deviation of fragment size are required.")
+		if args.single_end_defaults:
+			size = pipeline_config.parameters.fragment_length
+			sdev = pipeline_config.parameters.fragment_length_sdev
+		else:
+			raise ValueError("For single-end data, estimates for mean and standard deviation of fragment size are required.")
 
 	sample.paths.quant = os.path.join(sample.paths.sample_root, "kallisto")
 	sample.kallistoQuant = os.path.join(sample.paths.quant,"abundance.h5")
