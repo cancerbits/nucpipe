@@ -13,6 +13,7 @@ protocol_mapping:
     rnaBitSeq.py -f --quantseq;
     rnaKallisto.py --quantseq
   rnaKallisto: rnaKallisto.py
+  cDNA: rnaKallisto.py
   rnaBitSeq: rnaBitSeq.py -f
   rnaTopHat: rnaTopHat.py -f
   rnaESAT: rnaESAT.py
