@@ -9,7 +9,7 @@ import sys
 import yaml
 
 from peppy import AttributeDict
-from pypiper import add_pypiper_args, get_parameter, NGSTk, PipelineManager
+from pypiper import add_pypiper_args, get_first_value, NGSTk, PipelineManager
 
 
 __author__ = "Andre Rendeiro"
@@ -210,7 +210,7 @@ def process(sample, pipeline_config, args):
 	# for a numeric value. Such cases would need to be handled separately.)
 	cmdl_opts = {opt: arg for opt, arg in vars(args).items() if arg is not None}
 	pipe_opts = pipeline_config.parameters
-	getopt = partial(get_parameter, param_pools=[sample, cmdl_opts, pipe_opts])
+	getopt = partial(get_first_value, param_pools=[sample, cmdl_opts, pipe_opts])
 	n_boot = getopt("n_boot")
 	size = getopt("fragment_length", on_missing=None, error=False)
 	sdev = getopt("fragment_length_sdev", on_missing=None, error=False)
