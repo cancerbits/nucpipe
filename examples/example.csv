@@ -1,3 +1,0 @@
-sample_name,Sample_title,Sample_source_name_ch1,organism,Sample_organism_ch1,Sample_library_selection,protocol,data_source,Sample_type,SRR,SRX,Sample_geo_accession,Sample_series_id,read_type,Sample_instrument_model
-sample1,Scnn1a-Tg2_tdTnegative_cell_1,Primary visual cortex,Mus musculus,Mus musculus,cDNA,rnaKallisto,SRA,SRA,SRR2139958,SRX1129022,GSM1840546,GSE71585,single,Illumina HiSeq 2000
-sample2,Scnn1a-Tg2_tdTnegative_cell_2,Primary visual cortex,Mus musculus,Mus musculus,cDNA,rnaKallisto,SRA,SRA,SRR2139959,SRX1129023,GSM1840547,GSE71585,single,Illumina HiSeq 2000
