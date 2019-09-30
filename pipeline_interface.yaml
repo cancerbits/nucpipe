@@ -1,28 +1,13 @@
 protocol_mapping:
-  RNA-seq: >
-    rnaBitSeq.py -f;
-    rnaKallisto.py;
-    rnaTopHat.py -f
-  SMART:  >
-    rnaBitSeq.py -f;
-    rnaTopHat.py -f
-  SMART-seq:  >
-    rnaBitSeq.py -f;
-    rnaTopHat.py -f
-  QUANT-SEQ: >
-    rnaBitSeq.py -f --quantseq;
-    rnaKallisto.py --quantseq
-  rnaKallisto: rnaKallisto.py
-  cDNA: rnaKallisto.py
-  rnaBitSeq: rnaBitSeq.py -f
-  rnaTopHat: rnaTopHat.py -f
-  rnaESAT: rnaESAT.py
+  Nucseq: rnaNucSeq.py -f;
+  Nuc-seq: rnaNucSeq.py -f;
+
 
 pipelines:
-  rnaBitSeq.py:
-    name: rnaBitSeq
+  rnaNucSeq.py:
+    name: rnaNucSeq
     looper_args: True
-    path: src/rnaBitSeq.py
+    path: src/rnaNucSeq.py
     arguments:
       "--sample-name": sample_name
       "--genome": transcriptome
@@ -36,77 +21,12 @@ pipelines:
     resources:
       default:
         file_size: "0"
-        cores: "6"
-        mem: "36000"
+        cores: "4"
+        mem: "8000"
         time: "2-00:00:00"
       large:
         file_size: "4"
         cores: "6"
-        mem: "44000"
+        mem: "16000"
         time: "2-00:00:00"
-
-  rnaTopHat.py:
-    name: rnaTopHat
-    path: src/rnaTopHat.py
-    looper_args: True
-    required_input_files: [data_source]
-    ngs_input_files: [data_source]    
-    arguments:
-      "--sample-name": sample_name
-      "--genome": genome
-      "--input": data_source
-      "--single-or-paired": read_type
-    optional_arguments:
-      "-w": wigsum
-      "--input2": read2
-    resources:
-      default:
-        file_size: "0"
-        cores: "2"
-        mem: "60000"
-        time: "7-00:00:00"
-
-  rnaESAT.py:
-    name: rnaESAT
-    path: src/rnaESAT.py
-    looper_args: True
-    required_input_files: [data_source]    
-    ngs_input_files: [data_source]    
-    arguments:
-      "--sample-name": sample_name
-      "--genome": genome
-      "--input": data_source
-      "--single-or-paired": read_type
-    resources:
-      default:
-        file_size: "0"
-        cores: "4"
-        mem: "40000"
-        time: "0-12:00:00"
-
-  rnaKallisto.py:
-    name: rnaKallisto
-    path: src/rnaKallisto.py
-    looper_args: True
-    required_input_files: [data_source]
-    ngs_input_files: [data_source]
-    arguments:
-      "--sample-yaml": yaml_file
-      "--sample-name": sample_name
-      "--input": data_source
-      "--single-or-paired": read_type
-    optional_arguments:
-      "--input2": read2
-      "--fragment-length": fragment_length
-      "--fragment-length-sdev": fragment_length_sdev
-    resources:
-      default:
-        cores: "2"
-        mem: "4000"
-        time: "0-6:00:00"
-      normal:
-        min_file_size: "3"    
-        cores: "2"
-        mem: "8000"
-        time: "0-12:00:00"
 
