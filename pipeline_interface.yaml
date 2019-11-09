@@ -1,6 +1,6 @@
 protocol_mapping:
-  Nucseq: rnaNucSeq.py -f;
-  Nuc-seq: rnaNucSeq.py -f;
+  Nucseq: rnaNucSeq.py;
+  Nuc-seq: rnaNucSeq.py;
 
 
 pipelines:
@@ -10,12 +10,12 @@ pipelines:
     path: src/rnaNucSeq.py
     arguments:
       "--sample-name": sample_name
-      "--genome": transcriptome
+      "--genome": genome
       "--input": data_source
       "--single-or-paired": read_type
     optional_arguments:
       "--input2": read2
-      "--ercc-mix": ERCC_spikein
+      # "--ercc-mix": ERCC_spikein
     required_input_files: [data_source]
     ngs_input_files: [data_source]    
     resources:

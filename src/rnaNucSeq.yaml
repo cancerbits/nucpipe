@@ -1,0 +1,21 @@
+resources:
+  # paths to reference genomes, adapter files, and other required shared data
+  resources: ${RESOURCES}
+  genomes: ${RESOURCES}/genomes/
+  adapters: ${RESOURCES}/adapters/NexteraPE-PE.fa #${RESOURCES}/adapters/nucseq_adapters.fa # get from supplement of paper (https://doi.org/10.1038/nprot.2016.015): https://media.nature.com/original/nature-assets/nprot/journal/v11/n3/extref/nprot.2016.015-S3.txt
+
+tools:
+  # absolute paths to required tools
+  python: python3 #
+  java: java #
+  #Rscript: ${TOOLS}/Rscript
+  samtools: samtools
+  #picard: ${PICARD}
+  trimmomatic: ${TRIMMOMATIC} #
+  bowtie2: bowtie2
+  star: star
+  rsem: rsem-calculate-expression
+
+parameters:
+  # parameters passed to bioinformatic tools, subclassed by tool
+  trimmomatic:
